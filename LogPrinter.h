@@ -39,6 +39,11 @@ public:
 	* and error message at the end of the log file.
 	*/
 	void error(std::string error_message);
+
+	/*
+	* close() - closes the log file_name
+	*/
+	void close();
 };
 
 #endif // LOG_PRINTER_H

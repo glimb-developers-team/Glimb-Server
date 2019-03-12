@@ -63,3 +63,8 @@ void LogPrinter::error(std::string error_message)
 
 	log_file << "[" << get_time() << "]::ERROR::" << error_message << std::endl;
 }
+
+void LogPrinter::close()
+{
+	log_file.close();
+}
