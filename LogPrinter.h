@@ -41,7 +41,7 @@ public:
 	void error(std::string error_message);
 
 	/*
-	* close() - closes the log file_name
+	* close() - closes the log file.
 	*/
 	void close();
 };
