@@ -18,7 +18,7 @@
 
 class LogPrinter {
 private:
-	std::ofstream log_file;
+	static std::ofstream log_file;
 
 public:
 	/*
@@ -30,15 +30,20 @@ public:
 	~LogPrinter();
 
 	/*
+	* open() - opens another file and close previous
+	*/
+	static void open(std::string file_name);
+
+	/*
 	* print() - prints current time and the log message at the end of the log file.
 	*/
-	void print(std::string message);
+	static void print(std::string message);
 
 	/*
 	* error() - prints current time, the ERROR label
 	* and error message at the end of the log file.
 	*/
-	void error(std::string error_message);
+	static void error(std::string error_message);
 
 	/*
 	* close() - closes the log file.

@@ -15,6 +15,8 @@
 * See all interface description in the header file.
 */
 
+std::ofstream LogPrinter::log_file = std::ofstream("log.txt", std::ios::app);
+
 /*
 * get_time() - returns string with current date and time.
 */
@@ -35,6 +37,10 @@ std::string get_time()
 */
 LogPrinter::LogPrinter(std::string file_name)
 {
+	if (log_file.is_open()) {
+		log_file.close();
+	}
+
 	log_file.open(file_name, std::ios::app);
 }
 
@@ -46,9 +52,18 @@ LogPrinter::~LogPrinter()
 	log_file.close();
 }
 
+void LogPrinter::open(std::string file_name)
+{
+	if (log_file.is_open()) {
+		log_file.close();
+	}
+
+	log_file.open(file_name);
+}
+
 void LogPrinter::print(std::string message)
 {
-	if (log_file.is_open() != true) {
+	if (!log_file.is_open()) {
 		return;
 	}
 
