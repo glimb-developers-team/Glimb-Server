@@ -3,7 +3,12 @@
 --
 
 CREATE TABLE user (
-	login VARCHAR(16) NOT NULL PRIMARY KEY,
-	password VARCHAR(16) NOT NULL,
-	type VARCHAR(16) NOT NULL
+	Name VARCHAR(16) NOT NULL,
+	LastName VARCHAR(16) NOT NULL,
+	MiddleName VARCHAR(16),
+	PhoneNumber VARCHAR(16) NOT NULL,
+	Password VARCHAR(16) NOT NULL,
+	Type VARCHAR(16) NOT NULL,
+	ForemanPhoneNumber VARCHAR(16),
+	PRIMARY KEY (PhoneNumber)
 );
