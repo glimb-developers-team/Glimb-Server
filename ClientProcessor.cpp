@@ -17,12 +17,11 @@
 
 /*
 * This file defines methods of class ClientProcessor, which is described in ClientProcessor.h.
-* See all methods documentation in the header.file.
+* See all methods documentation in the header file.
 */
 
 #define BUF_SIZE 256
 
-void processing_client(int client_sockfd);
 void send_answer(int client_sockfd, rapidjson::Document &document);
 void send_error(int client_sockfd, std::string error);
 void send_ok(int client_sockfd);
@@ -118,12 +117,15 @@ void ClientProcessor::_register(int client_sockfd, rapidjson::Document &document
 			info["password"].GetString(), info["type"].GetString(),
 			info["foreman_number"].GetString());
 
-	if (db_answer.find("OK")) {
+	if (db_answer == "OK") {
 		send_ok(client_sockfd);
 	}
 	else {
 		if (db_answer.find("ERROR") && db_answer.find("Duplicate") && db_answer.find("PRIMARY")) {
 			send_error(client_sockfd, "This user already exists");
+		}
+		else {
+			send_error(client_sockfd, "Unknown database error");
 		}
 	}
 }
@@ -140,7 +142,7 @@ void ClientProcessor::_login(int client_sockfd, rapidjson::Document &document)
 	db_answer = _db_connector.login(info["number"].GetString(),
 					info["password"].GetString());
 
-	if (db_answer != 0) {	// No results
+	if (db_answer == 0) {	// No results
 		send_error(client_sockfd, "Wrong number of password");
 	}
 	else {			// Someone was found
@@ -169,12 +171,16 @@ void send_answer(int client_sockfd, rapidjson::Document &document)
 	rapidjson::StringBuffer string_buf;
 	rapidjson::PrettyWriter<rapidjson::StringBuffer> writer(string_buf);
 	char buffer[BUF_SIZE];
+	char log_buffer[BUF_SIZE];
 
 	/* Conversion to the char* */
 	document.Accept(writer);
 	snprintf(buffer, BUF_SIZE, "%s", string_buf.GetString());
 
 	/* Sending answer */
+	snprintf(log_buffer, BUF_SIZE, "Sending to the client on socket %d message: %s",
+		client_sockfd, buffer);
+	LogPrinter::print(log_buffer);
 	send(client_sockfd, buffer, BUF_SIZE, 0);
 }
 
