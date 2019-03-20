@@ -13,6 +13,7 @@
 #include <string>
 #include <sys/types.h>
 #include <sys/socket.h>
+#include <unistd.h>
 #include "rapidjson/prettywriter.h"
 
 /*
@@ -20,16 +21,16 @@
 * See all methods documentation in the header file.
 */
 
-#define BUF_SIZE 256
+#define BUF_SIZE 512
 
 void send_answer(int client_sockfd, rapidjson::Document &document);
 void send_error(int client_sockfd, std::string error);
 void send_ok(int client_sockfd);
 void check_field(rapidjson::Value &value, std::string field);
 
-ClientProcessor::ClientProcessor()
+ClientProcessor::ClientProcessor() : _db_connector(DbConnector())
 {
-	_db_connector = DbConnector();
+
 }
 
 ClientProcessor::~ClientProcessor()
@@ -48,6 +49,7 @@ void ClientProcessor::_processing_client(int client_sockfd)
 	/* Initialization */
 	char log_message[80];
 	char buffer[BUF_SIZE];
+	char log_buffer[BUF_SIZE];
 	rapidjson::Document document;
 	std::string request;
 	int res;
@@ -58,9 +60,12 @@ void ClientProcessor::_processing_client(int client_sockfd)
 
 	/* Start processing */
 	res = recv(client_sockfd, buffer, BUF_SIZE, 0);
-	while (res != -1) {
+	snprintf(log_buffer, BUF_SIZE, "Received %d symbols", res);
+	LogPrinter::print(log_buffer);
+	while (res > 0) {
 		try {
 			/* Some cheсks */
+			LogPrinter::print(buffer);
 			if (document.Parse(buffer).HasParseError()) {
 				throw "Request syntax error";
 			}
@@ -91,7 +96,11 @@ void ClientProcessor::_processing_client(int client_sockfd)
 		}
 
 		res = recv(client_sockfd, buffer, BUF_SIZE, 0);
+		snprintf(log_buffer, BUF_SIZE, "Received %d symbols", res);
+		LogPrinter::print(log_buffer);
 	}
+
+	close(client_sockfd);
 }
 
 void ClientProcessor::_register(int client_sockfd, rapidjson::Document &document)
@@ -103,6 +112,8 @@ void ClientProcessor::_register(int client_sockfd, rapidjson::Document &document
 	rapidjson::Document::AllocatorType& alloc = new_document.GetAllocator();
 	rapidjson::Value value;
 	rapidjson::Value &info = document["info"];
+
+	LogPrinter::print("Starting registrarion");
 
 	check_field(info, "name");
 	check_field(info, "last_name");
@@ -136,6 +147,8 @@ void ClientProcessor::_login(int client_sockfd, rapidjson::Document &document)
 	int db_answer;
 	rapidjson::Value &info = document["info"];
 
+	LogPrinter::print("Starting login");
+
 	check_field(info, "number");
 	check_field(info, "password");
 
@@ -143,7 +156,7 @@ void ClientProcessor::_login(int client_sockfd, rapidjson::Document &document)
 					info["password"].GetString());
 
 	if (db_answer == 0) {	// No results
-		send_error(client_sockfd, "Wrong number of password");
+		send_error(client_sockfd, "Wrong number or password");
 	}
 	else {			// Someone was found
 		send_ok(client_sockfd);
@@ -154,6 +167,8 @@ void check_field(rapidjson::Value &info, std::string field)
 {
 	/* Initialization */
 	char exception[80];
+
+	LogPrinter::print("Checking field");
 
 	if (!info.HasMember(field.c_str())) {
 		snprintf(exception, 80, "No \"%s\" field", field.c_str());
@@ -172,6 +187,8 @@ void send_answer(int client_sockfd, rapidjson::Document &document)
 	rapidjson::PrettyWriter<rapidjson::StringBuffer> writer(string_buf);
 	char buffer[BUF_SIZE];
 	char log_buffer[BUF_SIZE];
+
+	LogPrinter::print("Sending answer");
 
 	/* Conversion to the char* */
 	document.Accept(writer);
@@ -192,7 +209,10 @@ void send_error(int client_sockfd, std::string error)
 	rapidjson::Value error_value;
 	rapidjson::Document::AllocatorType& alloc = document.GetAllocator();
 
+	LogPrinter::print("Sending error");
+
 	/* Setting json answer */
+	document.SetObject();
 	document.AddMember("type", "error", alloc);
 	value.SetObject();
 	error_value.SetString(rapidjson::StringRef(error.c_str()));
