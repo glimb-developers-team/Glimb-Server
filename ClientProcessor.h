@@ -21,8 +21,8 @@ class ClientProcessor {
 private:
 	DbConnector _db_connector;
 	void _processing_client(int client_sockfd);
-	void _register(int client_sockfd, rapidjson::Document &document);
-	void _login(int client_sockfd, rapidjson::Document &document);
+	void _register(int client_sockfd, rapidjson::Value &info);
+	void _login(int client_sockfd, rapidjson::Value &info);
 
 public:
 	ClientProcessor();

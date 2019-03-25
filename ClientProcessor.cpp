@@ -85,10 +85,10 @@ void ClientProcessor::_processing_client(int client_sockfd)
 			/* Swithing requests */
 			request = document["request"].GetString();
 			if (request == REQUEST_REGISTRATION) {
-				_register(client_sockfd, document);
+				_register(client_sockfd, document["info"]);
 			}
 			else if (request == REQUEST_LOGIN) {
-				_login(client_sockfd, document);
+				_login(client_sockfd, document["info"]);
 			}
 		}
 		catch (const char *error) {
@@ -103,7 +103,7 @@ void ClientProcessor::_processing_client(int client_sockfd)
 	close(client_sockfd);
 }
 
-void ClientProcessor::_register(int client_sockfd, rapidjson::Document &document)
+void ClientProcessor::_register(int client_sockfd, rapidjson::Value &info)
 {
 	/* Initialization */
 	std::string db_answer;
@@ -111,7 +111,6 @@ void ClientProcessor::_register(int client_sockfd, rapidjson::Document &document
 	rapidjson::Document new_document;
 	rapidjson::Document::AllocatorType& alloc = new_document.GetAllocator();
 	rapidjson::Value value;
-	rapidjson::Value &info = document["info"];
 
 	LogPrinter::print("Starting registrarion");
 
@@ -141,11 +140,17 @@ void ClientProcessor::_register(int client_sockfd, rapidjson::Document &document
 	}
 }
 
-void ClientProcessor::_login(int client_sockfd, rapidjson::Document &document)
+void ClientProcessor::_login(int client_sockfd, rapidjson::Value &info)
 {
 	/* Initialization */
 	int db_answer;
-	rapidjson::Value &info = document["info"];
+	std::string name;
+	std::string last_name;
+	std::string middle_name;
+	rapidjson::Document document;
+	rapidjson::Value value;
+	rapidjson::Value tmp;
+	rapidjson::Document::AllocatorType& alloc = document.GetAllocator();
 
 	LogPrinter::print("Starting login");
 
@@ -153,13 +158,27 @@ void ClientProcessor::_login(int client_sockfd, rapidjson::Document &document)
 	check_field(info, "password");
 
 	db_answer = _db_connector.login(info["number"].GetString(),
-					info["password"].GetString());
+					info["password"].GetString(),
+					name, last_name, middle_name);
 
-	if (db_answer == 0) {	// No results
+	if (db_answer != 0) {	// Error
 		send_error(client_sockfd, "Wrong number or password");
 	}
 	else {			// Someone was found
-		send_ok(client_sockfd);
+		/* Json formation */
+		document.SetObject();
+		document.AddMember("type", "ok", alloc);
+		value.SetObject();
+		tmp.SetString(rapidjson::StringRef(name.c_str()));
+		value.AddMember("name", tmp, alloc);
+		tmp.SetString(rapidjson::StringRef(last_name.c_str()));
+		value.AddMember("last_name", tmp, alloc);
+		tmp.SetString(rapidjson::StringRef(middle_name.c_str()));
+		value.AddMember("middle_name", tmp, alloc);
+		document.AddMember("info", value, alloc);
+
+		/* Sending Json */
+		send_answer(client_sockfd, document);
 	}
 }
 

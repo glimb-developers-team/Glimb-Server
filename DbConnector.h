@@ -24,7 +24,7 @@ public:
 				std::string password, std::string type,
 				std::string foreman_number);
 
-	int login(std::string number, std::string password);
+	int login(std::string number, std::string password, std::string &name, std::string &last_name, std::string &middle_name);
 };
 
 #endif // DB_CONNECTOR_H

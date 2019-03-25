@@ -73,19 +73,18 @@ password.c_str(), type.c_str(), foreman_number.c_str());
 	return "OK";
 }
 
-int DbConnector::login(std::string number, std::string password)
+int DbConnector::login(std::string number, std::string password, std::string &name, std::string &last_name, std::string &middle_name)
 {
 	/* Initialization */
 	char query[QUERY_SIZE];
-	char error [QUERY_SIZE];
+	char error[QUERY_SIZE];
 	int res;
 	MYSQL_RES *mysql_res;
 	MYSQL_ROW sqlrow;
-	int return_value;
 
 	/* Setting query */
 	snprintf(query, QUERY_SIZE,
-		"SELECT COUNT(PhoneNumber) FROM user WHERE PhoneNumber = \"%s\" AND Password = \"%s\"",
+		"SELECT Name, LastName, MiddleName FROM user WHERE PhoneNumber = \"%s\" AND Password = \"%s\"",
 		number.c_str(), password.c_str());
 
 	/* Sending query */
@@ -98,8 +97,16 @@ int DbConnector::login(std::string number, std::string password)
 
 	/* Return result */
 	mysql_res = mysql_use_result(_conn_ptr);
+
 	sqlrow = mysql_fetch_row(mysql_res);
-	return_value = atoi(sqlrow[0]);
+	if (sqlrow == NULL) {
+		return -1;
+	}
+
+	name = sqlrow[0];
+	last_name = sqlrow[1];
+	middle_name = sqlrow[2];
+
 	mysql_free_result(mysql_res);
-	return return_value;
+	return 0;
 }
