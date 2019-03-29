@@ -8,7 +8,7 @@ LOGDIR = log
 # Compiler
 CC = g++
 
-#Compiler flags
+# Compiler flags
 CFLAGS = -I/usr/include/mysql -I$(INCLUDEDIR)
 # Linker flags
 LDFLAGS = -pthread -L/usr/lib/mysql -lmysqlclient
