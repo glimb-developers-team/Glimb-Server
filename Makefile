@@ -3,6 +3,7 @@ BUILDDIR = build
 BINDIR = bin
 SRCDIR = src
 INCLUDEDIR = include
+LOGDIR = log
 
 # Compiler
 CC = g++
@@ -20,6 +21,7 @@ $(BUILDDIR)/%.o: $(SRCDIR)/%.cpp
 
 $(BINDIR)/GlimbServer: $(BUILDDIR)/main.o $(BUILDDIR)/Server.o $(BUILDDIR)/ClientProcessor.o $(BUILDDIR)/DbConnector.o $(BUILDDIR)/LogPrinter.o
 	mkdir -p $(BINDIR)
+	mkdir -p $(LOGDIR)
 	$(CC) $^ -o $@ $(LDFLAGS)
 
 $(BUILDDIR)/main.o: $(SRCDIR)/main.cpp
