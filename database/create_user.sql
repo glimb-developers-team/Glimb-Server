@@ -1,5 +1,5 @@
 --
--- Create the table users
+-- Create the table user
 --
 
 CREATE TABLE user (
