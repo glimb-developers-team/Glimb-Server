@@ -15,5 +15,6 @@
 
 #define REQUEST_LOGIN "login"
 #define REQUEST_REGISTRATION "registration"
+#define REQUEST_GET_MATERIALS "get_materials"
 
 #endif // REQUESTS_H
