@@ -42,7 +42,7 @@ int main()
 		return 0;
 	}
 	else {			// Child
-		/* Closing useless fds*/
+		/* Closing useless fds */
 		close(0);
 		close(1);
 		close(2);
