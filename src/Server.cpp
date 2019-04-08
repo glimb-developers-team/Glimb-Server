@@ -43,6 +43,7 @@ Server::Server(int port) : _server_sockfd(socket(AF_INET, SOCK_STREAM/* | SOCK_N
 Server::~Server()
 {
 	close(_server_sockfd);
+	LogPrinter::print("Server socket was closed");
 }
 
 void Server::start()
@@ -72,11 +73,10 @@ int Server::get_client()
 	select_res = select(FD_SETSIZE, &inputs, (fd_set*)NULL, (fd_set*)NULL, &timeout);
 	switch (select_res) {
 	case 0:		// No input connection
-		LogPrinter::print("Timeout");
 		break;
 
 	case -1:	// Select failed
-		throw "Select failed";
+		throw "Select was interrupted";
 
 	default:	// There is an input connection
 		if (FD_ISSET(_server_sockfd, &inputs)) {

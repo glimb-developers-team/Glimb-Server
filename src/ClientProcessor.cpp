@@ -42,6 +42,7 @@ ClientProcessor::~ClientProcessor()
 			close(i);
 		}
 	}
+	LogPrinter::print("All clients sockets were closed");
 }
 
 void ClientProcessor::new_client(int client_sockfd)
@@ -67,17 +68,20 @@ void ClientProcessor::_processing_client(int client_num)
 	int res;
 
 	snprintf(log_message, 80,
-		"New thread started for client socket %d", _clients[client_num]);
+		"New thread started for client on socket %d", _clients[client_num]);
 	LogPrinter::print(log_message);
 
 	/* Start processing */
 	res = recv(_clients[client_num], buffer, BUF_SIZE, 0);
-	snprintf(log_buffer, BUF_SIZE, "Received %d symbols", res);
-	LogPrinter::print(log_buffer);
+	if (res == 0) {
+		LogPrinter::print("Received 0 symbols");
+	}
 	while (res > 0) {
 		try {
+			snprintf(log_buffer, BUF_SIZE, "Received %d symbols: %s", res, buffer);
+			LogPrinter::print(log_buffer);
+
 			/* Some cheсks */
-			LogPrinter::print(buffer);
 			if (document.Parse(buffer).HasParseError()) {
 				throw "Request syntax error";
 			}
@@ -108,11 +112,9 @@ void ClientProcessor::_processing_client(int client_num)
 		}
 
 		res = recv(_clients[client_num], buffer, BUF_SIZE, 0);
-		snprintf(log_buffer, BUF_SIZE, "Received %d symbols", res);
-		LogPrinter::print(log_buffer);
 	}
 	/* Closing connection */
-	snprintf(log_buffer, BUF_SIZE, "Connection closed with client on sock %d", _clients[client_num]);
+	snprintf(log_buffer, BUF_SIZE, "Connection closed with client on socket %d", _clients[client_num]);
 	LogPrinter::print(log_buffer);
 	close(_clients[client_num]);
 	_clients[client_num] = -1;
@@ -202,8 +204,6 @@ void check_field(rapidjson::Value &info, std::string field)
 	/* Initialization */
 	char exception[80];
 
-	LogPrinter::print("Checking field");
-
 	if (!info.HasMember(field.c_str())) {
 		snprintf(exception, 80, "No \"%s\" field", field.c_str());
 		throw (const char*)exception;
@@ -221,8 +221,6 @@ void send_answer(int client_sockfd, rapidjson::Document &document)
 	rapidjson::PrettyWriter<rapidjson::StringBuffer> writer(string_buf);
 	char buffer[BUF_SIZE];
 	char log_buffer[BUF_SIZE];
-
-	LogPrinter::print("Sending answer");
 
 	/* Conversion to the char* */
 	document.Accept(writer);
@@ -242,8 +240,6 @@ void send_error(int client_sockfd, std::string error)
 	rapidjson::Value value;
 	rapidjson::Value error_value;
 	rapidjson::Document::AllocatorType& alloc = document.GetAllocator();
-
-	LogPrinter::print("Sending error");
 
 	/* Setting json answer */
 	document.SetObject();
