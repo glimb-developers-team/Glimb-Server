@@ -10,6 +10,7 @@
 #include "LogPrinter.h"
 #include <string>
 #include <signal.h>
+#include <unistd.h>
 
 /*
 * This is the main file of Glimb-Server program.
@@ -19,6 +20,9 @@
 /* Server port */
 #define PORT 4512
 
+/* Client accepting timeout in seconds*/
+#define TIMEOUT 2
+
 /* If finish will be true, then server will stop his work. */
 bool finish = false;
 
@@ -27,35 +31,51 @@ bool finish = false;
 */
 void signal_handler(int sig)
 {
+	LogPrinter::print("Stopped by system signal");
 	finish = true;
 }
 
 int main()
 {
+	int fork_res;
 	int return_code = 0;
-	try {
-		/* Initialization */
-		Server server(PORT);
-		ClientProcessor client_processor;
-		int client_sockfd;
 
-		/* Preparing for signal processing */
-		signal(SIGTERM, signal_handler);
-		signal(SIGINT, signal_handler);
+	fork_res = fork();	// Parent
+	if (fork_res != 0) {
+		return 0;
+	}
+	else {			// Child
+		/* Closing useless fds*/
+		close(0);
+		close(1);
+		close(2);
+		try {
+			LogPrinter::print("Server started");
+			/* Initialization */
+			Server server(PORT);
+			ClientProcessor client_processor;
+			int client_sockfd;
 
-		/* Start working */
-		server.start();
-		LogPrinter::print("Server started");
-		while (finish != true) {
-			client_sockfd = server.get_client();
-			client_processor.new_client(client_sockfd);
+			/* Preparing for signal processing */
+			signal(SIGTERM, signal_handler);
+			signal(SIGINT, signal_handler);
+
+			/* Start working */
+			server.start();
+			while (finish != true) {
+				client_sockfd = server.get_client();
+				if (client_sockfd != -1 && client_sockfd != EWOULDBLOCK) {
+					client_processor.new_client(client_sockfd);
+				}
+				sleep(TIMEOUT);
+			}
 		}
-	}
-	catch (const char *error) {
-		LogPrinter::print(error);
-		return_code = -1;
-	}
+		catch (const char *error) {
+			LogPrinter::print(error);
+			return_code = -1;
+		}
 
-	LogPrinter::print("Finishing program");
-	return return_code;
+		LogPrinter::print("Finishing program");
+		return return_code;
+	}
 }

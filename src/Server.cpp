@@ -21,7 +21,7 @@
 * See all methods documentation in header file.
 */
 
-Server::Server(int port) : _server_sockfd(socket(AF_INET, SOCK_STREAM, 0)), _port(port)
+Server::Server(int port) : _server_sockfd(socket(AF_INET, SOCK_STREAM | SOCK_NONBLOCK, 0)), _port(port)
 {
 	/* Initialization */
 	struct sockaddr_in server_address;
@@ -41,7 +41,7 @@ Server::Server(int port) : _server_sockfd(socket(AF_INET, SOCK_STREAM, 0)), _por
 
 Server::~Server()
 {
-
+	close(_server_sockfd);
 }
 
 void Server::start()
@@ -61,11 +61,6 @@ int Server::get_client()
 		sprintf(log_message, "Connected to the client with ip %s",
 			inet_ntoa(client_address.sin_addr));
 		LogPrinter::print(log_message);
-	}
-	else {
-		sprintf(log_message, "%s", strerror(errno));
-		LogPrinter::error(log_message);
-		throw "Failed to accept connection to the client";
 	}
 
 	return client_sockfd;
