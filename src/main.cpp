@@ -20,9 +20,6 @@
 /* Server port */
 #define PORT 4512
 
-/* Client accepting timeout in seconds*/
-#define TIMEOUT 2
-
 /* If finish will be true, then server will stop his work. */
 bool finish = false;
 
@@ -64,10 +61,9 @@ int main()
 			server.start();
 			while (finish != true) {
 				client_sockfd = server.get_client();
-				if (client_sockfd != -1 && client_sockfd != EWOULDBLOCK) {
+				if (client_sockfd != -1) {
 					client_processor.new_client(client_sockfd);
 				}
-				sleep(TIMEOUT);
 			}
 		}
 		catch (const char *error) {

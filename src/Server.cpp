@@ -7,6 +7,7 @@
 
 #include <sys/types.h>
 #include <sys/socket.h>
+#include <sys/time.h>
 #include <netinet/in.h>
 #include <arpa/inet.h>
 #include <unistd.h>
@@ -21,7 +22,7 @@
 * See all methods documentation in header file.
 */
 
-Server::Server(int port) : _server_sockfd(socket(AF_INET, SOCK_STREAM | SOCK_NONBLOCK, 0)), _port(port)
+Server::Server(int port) : _server_sockfd(socket(AF_INET, SOCK_STREAM/* | SOCK_NONBLOCK*/, 0)), _port(port)
 {
 	/* Initialization */
 	struct sockaddr_in server_address;
@@ -51,17 +52,48 @@ void Server::start()
 
 int Server::get_client()
 {
+	/* Initialization */
 	char log_message[80];
 	int client_sockfd;
 	struct sockaddr_in client_address;
 	unsigned int length = sizeof(client_address);
+	fd_set inputs;
+	struct timeval timeout;
+	int select_res;
+	int result = -1;
 
-	client_sockfd = accept(_server_sockfd, (struct sockaddr*)&client_address, &length);
-	if (client_sockfd != -1) {
-		sprintf(log_message, "Connected to the client with ip %s",
-			inet_ntoa(client_address.sin_addr));
-		LogPrinter::print(log_message);
+	/* Setting variables for select() */
+	FD_ZERO(&inputs);
+	FD_SET(_server_sockfd, &inputs);
+	/* Timeout */
+	timeout.tv_sec = 2;
+	timeout.tv_usec = 500000;
+
+	select_res = select(FD_SETSIZE, &inputs, (fd_set*)NULL, (fd_set*)NULL, &timeout);
+	switch (select_res) {
+	case 0:		// No input connection
+		LogPrinter::print("Timeout");
+		break;
+
+	case -1:	// Select failed
+		throw "Select failed";
+
+	default:	// There is an input connection
+		if (FD_ISSET(_server_sockfd, &inputs)) {
+			client_sockfd = accept(_server_sockfd, (struct sockaddr*)&client_address,
+						&length);
+			if (client_sockfd != -1) {
+				sprintf(log_message, "Connected to the client with ip %s",
+					inet_ntoa(client_address.sin_addr));
+				LogPrinter::print(log_message);
+				result = client_sockfd;
+			}
+			else {
+				throw "Failed to accept connection with the client";
+			}
+		}
+		break;
 	}
 
-	return client_sockfd;
+	return result;
 }
