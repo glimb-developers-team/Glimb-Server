@@ -34,7 +34,8 @@ public:
 	void start();
 
 	/*
-	* get_client() - establishes connection with client and returns client's socket.
+	* get_client() - establishes connection with client and returns client's socket
+	* or -1 if timeout.
 	* A "Failed to accept connection to the client" exception of type const char* can be throwed.
 	*/
 	int get_client();
