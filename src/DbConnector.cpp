@@ -43,7 +43,7 @@ DbConnector::DbConnector()
 DbConnector::~DbConnector()
 {
 	mysql_close(_conn_ptr);
-	LogPrinter::print("Disconnested from the MySQL server");
+	LogPrinter::print("Disconnected from the MySQL server");
 }
 
 std::string DbConnector::register_new(std::string name, std::string last_name,
