@@ -13,6 +13,13 @@
 * It serves client in separate thread.
 */
 
+/*
+* MAX_CLIENTS - defines how much clients can be connected to the server in the same moment.
+* If the new client accepts to connetion, he will receives the refuse.
+*/
+
+#define MAX_CLIENTS 5
+
 #include <string>
 #include "DbConnector.h"
 #include "rapidjson/document.h"
@@ -23,6 +30,17 @@ private:
 	* _db_connector - object for working with MySQL database.
 	*/
 	DbConnector _db_connector;
+
+	/*
+	* _clients - massive with clients sockets descriptors.
+	*/
+	int _clients[MAX_CLIENTS];
+
+	/*
+	* _clients_counter - counter of real connected clients.
+	* Can't be greater then MAX_CLIENTS.
+	*/
+	int _clients_counter;
 
 	/*
 	* _processing_client() - receives message from client, who was added with new_client() (See below).
@@ -59,7 +77,7 @@ public:
 	~ClientProcessor();
 
 	/*
-	* new_client() - creates a new thread for client processing and detach it.
+	* new_client() - creates a new thread for client processing and detaches it.
 	*/
 	void new_client(int client_sockfd);
 };

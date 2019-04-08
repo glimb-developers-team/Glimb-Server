@@ -28,23 +28,35 @@ void send_error(int client_sockfd, std::string error);
 void send_ok(int client_sockfd);
 void check_field(rapidjson::Value &value, std::string field);
 
-ClientProcessor::ClientProcessor() : _db_connector(DbConnector())
+ClientProcessor::ClientProcessor() : _db_connector(DbConnector()), _clients_counter(0)
 {
-
+	for (int i : _clients) {
+		i = -1;
+	}
 }
 
 ClientProcessor::~ClientProcessor()
 {
-
+	for (int i : _clients) {
+		if (i != -1) {
+			close(i);
+		}
+	}
 }
 
 void ClientProcessor::new_client(int client_sockfd)
 {
-	std::thread client_thread(&ClientProcessor::_processing_client, this, client_sockfd);
-	client_thread.detach();
+	if (_clients_counter < MAX_CLIENTS) {
+		_clients[_clients_counter++] = client_sockfd;
+		std::thread client_thread(&ClientProcessor::_processing_client, this, _clients_counter - 1);
+		client_thread.detach();
+	}
+	else {
+		send_error(client_sockfd, "Too much connections, try later");
+	}
 }
 
-void ClientProcessor::_processing_client(int client_sockfd)
+void ClientProcessor::_processing_client(int client_num)
 {
 	/* Initialization */
 	char log_message[80];
@@ -55,11 +67,11 @@ void ClientProcessor::_processing_client(int client_sockfd)
 	int res;
 
 	snprintf(log_message, 80,
-		"New thread started for client socket %d", client_sockfd);
+		"New thread started for client socket %d", _clients[client_num]);
 	LogPrinter::print(log_message);
 
 	/* Start processing */
-	res = recv(client_sockfd, buffer, BUF_SIZE, 0);
+	res = recv(_clients[client_num], buffer, BUF_SIZE, 0);
 	snprintf(log_buffer, BUF_SIZE, "Received %d symbols", res);
 	LogPrinter::print(log_buffer);
 	while (res > 0) {
@@ -85,22 +97,25 @@ void ClientProcessor::_processing_client(int client_sockfd)
 			/* Swithing requests */
 			request = document["request"].GetString();
 			if (request == REQUEST_REGISTRATION) {
-				_register(client_sockfd, document["info"]);
+				_register(_clients[client_num], document["info"]);
 			}
 			else if (request == REQUEST_LOGIN) {
-				_login(client_sockfd, document["info"]);
+				_login(_clients[client_num], document["info"]);
 			}
 		}
 		catch (const char *error) {
-			send_error(client_sockfd, error);
+			send_error(_clients[client_num], error);
 		}
 
-		res = recv(client_sockfd, buffer, BUF_SIZE, 0);
+		res = recv(_clients[client_num], buffer, BUF_SIZE, 0);
 		snprintf(log_buffer, BUF_SIZE, "Received %d symbols", res);
 		LogPrinter::print(log_buffer);
 	}
-
-	close(client_sockfd);
+	/* Closing connection */
+	snprintf(log_buffer, BUF_SIZE, "Connection closed with client on sock %d", _clients[client_num]);
+	LogPrinter::print(log_buffer);
+	close(_clients[client_num]);
+	_clients[client_num] = -1;
 }
 
 void ClientProcessor::_register(int client_sockfd, rapidjson::Value &info)
