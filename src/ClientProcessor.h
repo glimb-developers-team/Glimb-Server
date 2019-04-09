@@ -72,6 +72,8 @@ private:
 	*/
 	void _login(int client_sockfd, rapidjson::Value &info);
 
+	void _get_materials(int client_sockfd);
+
 public:
 	ClientProcessor();
 	~ClientProcessor();

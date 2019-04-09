@@ -11,6 +11,7 @@
 #include <thread>
 #include <cstring>
 #include <string>
+#include <queue>
 #include <sys/types.h>
 #include <sys/socket.h>
 #include <unistd.h>
@@ -22,6 +23,7 @@
 */
 
 #define BUF_SIZE 512
+#define MATERIAL_SYM_LENGTH 128
 
 void send_answer(int client_sockfd, rapidjson::Document &document);
 void send_error(int client_sockfd, std::string error);
@@ -106,6 +108,9 @@ void ClientProcessor::_processing_client(int client_num)
 			else if (request == REQUEST_LOGIN) {
 				_login(_clients[client_num], document["info"]);
 			}
+			else if (request == REQUEST_GET_MATERIALS) {
+				_get_materials(_clients[client_num]);
+			}
 		}
 		catch (const char *error) {
 			send_error(_clients[client_num], error);
@@ -182,7 +187,7 @@ void ClientProcessor::_login(int client_sockfd, rapidjson::Value &info)
 		send_error(client_sockfd, "Wrong number or password");
 	}
 	else {			// Someone was found
-		/* Json formation */
+		/* Setting json */
 		document.SetObject();
 		document.AddMember("type", "ok", alloc);
 		value.SetObject();
@@ -194,9 +199,59 @@ void ClientProcessor::_login(int client_sockfd, rapidjson::Value &info)
 		value.AddMember("middle_name", tmp, alloc);
 		document.AddMember("info", value, alloc);
 
-		/* Sending Json */
+		/* Sending json */
 		send_answer(client_sockfd, document);
 	}
+}
+
+void ClientProcessor::_get_materials(int client_sockfd)
+{
+	/* Initialization */
+	std::queue<material> materials_queue = _db_connector.get_materials();
+	rapidjson::Document document;
+	rapidjson::Value info;
+	rapidjson::Value materials;
+	rapidjson::Value mat_obj;
+	rapidjson::Value str;
+	rapidjson::Document::AllocatorType& alloc = document.GetAllocator();
+	int i;
+
+	/* Sending data about all materials */
+	while (materials_queue.empty() != true) {
+		/* Setting json */
+		document.SetObject();
+		document.AddMember("type", "ok", alloc);
+		info.SetObject();
+		materials.SetArray();
+		i = 0;
+
+		while ((BUF_SIZE - MATERIAL_SYM_LENGTH*(++i) >= 128) &&	// Until lost 128 bytes of free space
+		(materials_queue.empty() != true)) {
+			mat_obj.SetObject();
+			str.SetString(materials_queue.front().title.c_str(), alloc);
+			mat_obj.AddMember("title", str, alloc);
+			str.SetString(materials_queue.front().unions.c_str(), alloc);
+			mat_obj.AddMember("unions", str, alloc);
+			str.SetString(materials_queue.front().price.c_str(), alloc);
+			mat_obj.AddMember("price", str, alloc);
+
+			materials.PushBack(mat_obj, alloc);
+			materials_queue.pop();
+		}
+		info.AddMember("materials", materials, alloc);
+		document.AddMember("info", info, alloc);
+
+		/* Sending json */
+		send_answer(client_sockfd, document);
+	}
+
+	document.SetObject();
+	document.AddMember("type","ok", alloc);
+	info.SetObject();
+	info.AddMember("description", "end", alloc);
+	document.AddMember("info", info, alloc);
+
+	send_answer(client_sockfd, document);
 }
 
 void check_field(rapidjson::Value &info, std::string field)
@@ -227,7 +282,7 @@ void send_answer(int client_sockfd, rapidjson::Document &document)
 	snprintf(buffer, BUF_SIZE, "%s", string_buf.GetString());
 
 	/* Sending answer */
-	snprintf(log_buffer, BUF_SIZE, "Sending to the client on socket %d message: %s",
+	snprintf(log_buffer, BUF_SIZE, "Sending to the client on the socket %d message: %s",
 		client_sockfd, buffer);
 	LogPrinter::print(log_buffer);
 	send(client_sockfd, buffer, BUF_SIZE, 0);

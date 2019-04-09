@@ -47,9 +47,9 @@ DbConnector::~DbConnector()
 }
 
 std::string DbConnector::register_new(std::string name, std::string last_name,
-			std::string middle_name, std::string number,
-			std::string password, std::string type,
-			std::string foreman_number)
+				std::string middle_name, std::string number,
+				std::string password, std::string type,
+				std::string foreman_number)
 {
 	/* Initialization */
 	char query[QUERY_SIZE];
@@ -73,7 +73,8 @@ password.c_str(), type.c_str(), foreman_number.c_str());
 	return "OK";
 }
 
-int DbConnector::login(std::string number, std::string password, std::string &name, std::string &last_name, std::string &middle_name)
+int DbConnector::login(std::string number, std::string password, std::string &name,
+		std::string &last_name, std::string &middle_name)
 {
 	/* Initialization */
 	char query[QUERY_SIZE];
@@ -84,13 +85,13 @@ int DbConnector::login(std::string number, std::string password, std::string &na
 
 	/* Setting query */
 	snprintf(query, QUERY_SIZE,
-		"SELECT Name, LastName, MiddleName FROM user WHERE PhoneNumber = \"%s\" AND Password = \"%s\"",
+		"SELECT Name, LastName, MiddleName FROM user WHERE PhoneNumber = \"%s\" AND Password = \"%s\";",
 		number.c_str(), password.c_str());
 
 	/* Sending query */
 	res = mysql_query(_conn_ptr, query);
 	if (res != 0) {	// Select error
-		snprintf(error, QUERY_SIZE, "MySQL error: %s", mysql_error(_conn_ptr));
+		snprintf(error, QUERY_SIZE, "MySQL error: %s;", mysql_error(_conn_ptr));
 		LogPrinter::print(error);
 		throw "MySQL select failed";
 	}
@@ -109,4 +110,44 @@ int DbConnector::login(std::string number, std::string password, std::string &na
 
 	mysql_free_result(mysql_res);
 	return 0;
+}
+
+std::queue<material> DbConnector::get_materials()
+{
+	/* Initialization */
+	std::queue<material> materials_queue;
+	material tmp;
+	char query[QUERY_SIZE];
+	char error[QUERY_SIZE];
+	int res;
+	MYSQL_RES *mysql_res;
+	MYSQL_ROW sqlrow;
+
+	/* Setting query */
+	snprintf(query, QUERY_SIZE,
+		"SELECT * FROM material;");
+
+	/* Sending query */
+	res = mysql_query(_conn_ptr, query);
+	if (res != 0) {	// Select error
+		snprintf(error, QUERY_SIZE, "MySQL error: %s;", mysql_error(_conn_ptr));
+		LogPrinter::print(error);
+		throw "MySQL select failed";
+	}
+
+	/* Return result */
+	mysql_res = mysql_use_result(_conn_ptr);
+
+	sqlrow = mysql_fetch_row(mysql_res);
+	while (sqlrow != NULL) {
+		tmp.title = sqlrow[0];
+		tmp.unions = sqlrow[1];
+		tmp.price = sqlrow[2];
+
+		materials_queue.push(tmp);
+		sqlrow = mysql_fetch_row(mysql_res);
+	}
+
+	mysql_free_result(mysql_res);
+	return materials_queue;
 }
