@@ -15,7 +15,7 @@
 struct material {
 	std::string title;
 	std::string unions;
-	std::string price;
+	double price;
 };
 
 class DbConnector {

@@ -233,7 +233,7 @@ void ClientProcessor::_get_materials(int client_sockfd)
 			mat_obj.AddMember("title", str, alloc);
 			str.SetString(materials_queue.front().unions.c_str(), alloc);
 			mat_obj.AddMember("unions", str, alloc);
-			str.SetString(materials_queue.front().price.c_str(), alloc);
+			str = rapidjson::Value(materials_queue.front().price);
 			mat_obj.AddMember("price", str, alloc);
 
 			materials.PushBack(mat_obj, alloc);

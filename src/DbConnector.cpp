@@ -142,7 +142,7 @@ std::queue<material> DbConnector::get_materials()
 	while (sqlrow != NULL) {
 		tmp.title = sqlrow[0];
 		tmp.unions = sqlrow[1];
-		tmp.price = sqlrow[2];
+		tmp.price = atof(sqlrow[2]);
 
 		materials_queue.push(tmp);
 		sqlrow = mysql_fetch_row(mysql_res);
