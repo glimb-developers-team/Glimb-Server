@@ -123,6 +123,7 @@ void ClientProcessor::_processing_client(int client_num)
 	LogPrinter::print(log_buffer);
 	close(_clients[client_num]);
 	_clients[client_num] = -1;
+	_clients_counter--;
 }
 
 void ClientProcessor::_register(int client_sockfd, rapidjson::Value &info)
