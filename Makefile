@@ -22,6 +22,7 @@ $(BUILDDIR)/%.o: $(SRCDIR)/%.cpp
 $(BINDIR)/GlimbServer: $(BUILDDIR)/main.o $(BUILDDIR)/Server.o $(BUILDDIR)/ClientProcessor.o $(BUILDDIR)/DbConnector.o $(BUILDDIR)/LogPrinter.o
 	mkdir -p $(BINDIR)
 	mkdir -p $(LOGDIR)
+	chmod +x stop_server.sh
 	$(CC) $^ -o $@ $(LDFLAGS)
 
 $(BUILDDIR)/main.o: $(SRCDIR)/main.cpp
