@@ -74,7 +74,7 @@ password.c_str(), type.c_str(), foreman_number.c_str());
 }
 
 int DbConnector::login(std::string number, std::string password, std::string &name,
-		std::string &last_name, std::string &middle_name)
+		std::string &last_name, std::string &middle_name, std::string &user_type)
 {
 	/* Initialization */
 	char query[QUERY_SIZE];
@@ -85,7 +85,7 @@ int DbConnector::login(std::string number, std::string password, std::string &na
 
 	/* Setting query */
 	snprintf(query, QUERY_SIZE,
-		"SELECT Name, LastName, MiddleName FROM user WHERE PhoneNumber = \"%s\" AND Password = \"%s\";",
+		"SELECT Name, LastName, MiddleName, Type FROM user WHERE PhoneNumber = \"%s\" AND Password = \"%s\";",
 		number.c_str(), password.c_str());
 
 	/* Sending query */
@@ -107,6 +107,7 @@ int DbConnector::login(std::string number, std::string password, std::string &na
 	name = sqlrow[0];
 	last_name = sqlrow[1];
 	middle_name = sqlrow[2];
+	user_type = sqlrow[3];
 
 	mysql_free_result(mysql_res);
 	return 0;
