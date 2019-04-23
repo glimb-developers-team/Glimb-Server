@@ -37,8 +37,8 @@ int main()
 	int fork_res;
 	int return_code = 0;
 
-	fork_res = fork();	// Parent
-	if (fork_res != 0) {
+	fork_res = fork();
+	if (fork_res != 0) {	// Parent
 		return 0;
 	}
 	else {			// Child
