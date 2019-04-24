@@ -50,8 +50,12 @@ ClientProcessor::~ClientProcessor()
 void ClientProcessor::new_client(int client_sockfd)
 {
 	if (_clients_counter < MAX_CLIENTS) {
-		_clients[_clients_counter++] = client_sockfd;
-		std::thread client_thread(&ClientProcessor::_processing_client, this, _clients_counter - 1);
+		for (int i = 0; i < MAX_CLIENTS; i++) {
+			if (_clients[i] == -1) {
+				_clients[i] = client_sockfd;
+			}
+		}
+		std::thread client_thread(&ClientProcessor::_processing_client, this, _clients_counter++);
 		client_thread.detach();
 	}
 	else {
