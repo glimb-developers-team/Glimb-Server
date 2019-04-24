@@ -74,7 +74,8 @@ password.c_str(), type.c_str(), foreman_number.c_str());
 }
 
 int DbConnector::login(std::string number, std::string password, std::string &name,
-		std::string &last_name, std::string &middle_name, std::string &user_type)
+		std::string &last_name, std::string &middle_name, std::string &user_type,
+		std::queue<std::string> &clients_queue)
 {
 	/* Initialization */
 	char query[QUERY_SIZE];
@@ -108,6 +109,24 @@ int DbConnector::login(std::string number, std::string password, std::string &na
 	last_name = sqlrow[1];
 	middle_name = sqlrow[2];
 	user_type = sqlrow[3];
+
+	mysql_free_result(mysql_res);
+
+	if (user_type == "foreman") {
+		snprintf(query, QUERY_SIZE, "SELECT PhoneNumber FROM user WHERE ForemanPhoneNumber = \"%s\";", number.c_str());
+
+		res = mysql_query(_conn_ptr, query);
+		if (res != 0) {	// Select error
+			snprintf(error, QUERY_SIZE, "MySQL error: %s;", mysql_error(_conn_ptr));
+			LogPrinter::print(error);
+			throw "MySQL select failed";
+		}
+
+		mysql_res = mysql_use_result(_conn_ptr);
+		while ((sqlrow = mysql_fetch_row(mysql_res)) != NULL) {
+			clients_queue.push(sqlrow[0]);
+		}
+	}
 
 	mysql_free_result(mysql_res);
 	return 0;
@@ -151,4 +170,59 @@ std::queue<material> DbConnector::get_materials()
 
 	mysql_free_result(mysql_res);
 	return materials_queue;
+}
+
+void DbConnector::store_purchase(std::string foreman_num, std::string client_num, std::queue<purchase> purchases_queue)
+{
+	/* Initialization */
+	char query[QUERY_SIZE];
+	char error[QUERY_SIZE];
+	int purchase_id;
+	purchase p;
+	int res;
+	MYSQL_RES *mysql_res;
+	MYSQL_ROW sqlrow;
+
+	snprintf(query, QUERY_SIZE, "INSERT INTO purchase(ClientNum, ForemanNum) VALUES(\"%s\", \"%s\")", client_num.c_str(), foreman_num.c_str());
+
+	/* Sending query */
+	res = mysql_query(_conn_ptr, query);
+	if (res != 0) {	// Insert error
+		snprintf(error, QUERY_SIZE, "MySQL error: %s", mysql_error(_conn_ptr));
+		LogPrinter::print(error);
+		throw "MySQL insert failed";
+	}
+
+	mysql_res = mysql_use_result(_conn_ptr);
+	mysql_free_result(mysql_res);
+
+	snprintf(query, QUERY_SIZE, "SELECT LAST_INSERT_ID()");
+
+	/* Sending query */
+	res = mysql_query(_conn_ptr, query);
+	if (res != 0) {	// Insert error
+		snprintf(error, QUERY_SIZE, "MySQL error: %s", mysql_error(_conn_ptr));
+		LogPrinter::print(error);
+		throw "MySQL insert failed";
+	}
+
+	mysql_res = mysql_use_result(_conn_ptr);
+	sqlrow = mysql_fetch_row(mysql_res);
+	purchase_id = atoi(sqlrow[0]);
+	mysql_free_result(mysql_res);
+
+	/* Pushing data to the storage */
+	while (!purchases_queue.empty()) {
+		p = purchases_queue.front();
+		snprintf(query, QUERY_SIZE, "INSERT INTO purchase_material(PurchaseId, MaterialTitle, Quantity) VALUES(\"%d\", \"%s\", \"%d\")", purchase_id, p.title.c_str(), p.quantity);
+
+		/* Sending query */
+		res = mysql_query(_conn_ptr, query);
+		if (res != 0) {	// Insert error
+			snprintf(error, QUERY_SIZE, "MySQL error: %s", mysql_error(_conn_ptr));
+			LogPrinter::print(error);
+			throw "MySQL insert failed";
+		}
+		purchases_queue.pop();
+	}
 }

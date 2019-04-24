@@ -74,6 +74,8 @@ private:
 
 	void _get_materials(int client_sockfd);
 
+	void _send_purchase(int client_sockfd, rapidjson::Value &info);
+
 public:
 	ClientProcessor();
 	~ClientProcessor();

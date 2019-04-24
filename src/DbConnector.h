@@ -18,6 +18,11 @@ struct material {
 	double price;
 };
 
+struct purchase {
+	std::string title;
+	int quantity;
+};
+
 class DbConnector {
 private:
 	MYSQL *_conn_ptr;
@@ -32,9 +37,11 @@ public:
 				std::string foreman_number);
 
 	int login(std::string number, std::string password, std::string &name,
-		std::string &last_name, std::string &middle_name, std::string &user_type);
+		std::string &last_name, std::string &middle_name, std::string &user_type, std::queue<std::string> &clients_queue);
 
 	std::queue<material> get_materials();
+
+	void store_purchase(std::string foreman_num, std::string client_num, std::queue<purchase> purchases_queue);
 };
 
 #endif // DB_CONNECTOR_H

@@ -28,7 +28,7 @@
 void send_answer(int client_sockfd, rapidjson::Document &document);
 void send_error(int client_sockfd, std::string error);
 void send_ok(int client_sockfd);
-void check_field(rapidjson::Value &value, std::string field);
+void check_field(const rapidjson::Value &value, std::string field);
 
 ClientProcessor::ClientProcessor() : _db_connector(DbConnector()), _clients_counter(0)
 {
@@ -111,8 +111,12 @@ void ClientProcessor::_processing_client(int client_num)
 			else if (request == REQUEST_GET_MATERIALS) {
 				_get_materials(_clients[client_num]);
 			}
+			else if (request == REQUEST_SEND_PURCHASE) {
+				_send_purchase(_clients[client_num], document["info"]);
+			}
 		}
 		catch (const char *error) {
+			LogPrinter::print(error);
 			send_error(_clients[client_num], error);
 		}
 
@@ -155,10 +159,10 @@ void ClientProcessor::_register(int client_sockfd, rapidjson::Value &info)
 	}
 	else {
 		if (db_answer.find("ERROR") && db_answer.find("Duplicate") && db_answer.find("PRIMARY")) {
-			send_error(client_sockfd, "This user already exists");
+			throw "This user already exists";
 		}
 		else {
-			send_error(client_sockfd, "Unknown database error");
+			throw "Unknown database error";
 		}
 	}
 }
@@ -171,9 +175,11 @@ void ClientProcessor::_login(int client_sockfd, rapidjson::Value &info)
 	std::string last_name;
 	std::string middle_name;
 	std::string user_type;
+	std::queue<std::string> clients_numbers;
 	rapidjson::Document document;
 	rapidjson::Value value;
 	rapidjson::Value tmp;
+	rapidjson::Value numbers_mas;
 	rapidjson::Document::AllocatorType& alloc = document.GetAllocator();
 
 	LogPrinter::print("Starting login");
@@ -183,24 +189,39 @@ void ClientProcessor::_login(int client_sockfd, rapidjson::Value &info)
 
 	db_answer = _db_connector.login(info["number"].GetString(),
 					info["password"].GetString(),
-					name, last_name, middle_name, user_type);
+					name, last_name, middle_name, user_type, clients_numbers);
 
 	if (db_answer != 0) {	// Error
-		send_error(client_sockfd, "Wrong number or password");
+		throw "Wrong number or password";
 	}
 	else {			// Someone was found
 		/* Setting json */
 		document.SetObject();
 		document.AddMember("type", "ok", alloc);
 		value.SetObject();
+
 		tmp.SetString(rapidjson::StringRef(name.c_str()));
 		value.AddMember("name", tmp, alloc);
+
 		tmp.SetString(rapidjson::StringRef(last_name.c_str()));
 		value.AddMember("last_name", tmp, alloc);
+
 		tmp.SetString(rapidjson::StringRef(middle_name.c_str()));
 		value.AddMember("middle_name", tmp, alloc);
+
 		tmp.SetString(rapidjson::StringRef(user_type.c_str()));
 		value.AddMember("user_type", tmp, alloc);
+
+		if (user_type == "foreman") {
+			numbers_mas.SetArray();
+			while (!clients_numbers.empty()) {
+				tmp.SetString(clients_numbers.front().c_str(), alloc);
+				numbers_mas.PushBack(tmp, alloc);
+				clients_numbers.pop();
+			}
+			value.AddMember("clients_numbers", numbers_mas, alloc);
+		}
+
 		document.AddMember("info", value, alloc);
 
 		/* Sending json */
@@ -249,27 +270,76 @@ void ClientProcessor::_get_materials(int client_sockfd)
 		send_answer(client_sockfd, document);
 	}
 
+	/* Setting end message */
 	document.SetObject();
 	document.AddMember("type","ok", alloc);
 	info.SetObject();
 	info.AddMember("description", "end", alloc);
 	document.AddMember("info", info, alloc);
 
+	/* Sending end message */
 	send_answer(client_sockfd, document);
 }
 
-void check_field(rapidjson::Value &info, std::string field)
+void ClientProcessor::_send_purchase(int client_sockfd, rapidjson::Value &info)
+{
+	/* Initialization */
+	static std::string foreman_num;
+	static std::string client_num;
+	static std::queue<purchase> purchase_queue;
+	purchase pur_tmp;
+	rapidjson::Document document;
+	rapidjson::Value purchase_value;
+	rapidjson::Value output_info;
+	rapidjson::Document::AllocatorType& alloc = document.GetAllocator();
+
+	document.SetObject();
+	document.AddMember("type", "ok", alloc);
+	output_info.SetObject();
+	document.AddMember("info", output_info, alloc);
+
+	/* If it's the end of translation */
+	if (info.HasMember("description")) {
+		if (strcmp(info["description"].GetString(), "end") == 0) {
+			_db_connector.store_purchase(foreman_num, client_num, purchase_queue);
+			purchase_queue = std::queue<purchase>();
+			send_answer(client_sockfd, document);
+			return;
+		}
+	}
+
+	check_field(info, "foreman_num");
+	foreman_num = info["foreman_num"].GetString();
+
+	check_field(info, "client_num");
+	client_num = info["client_num"].GetString();
+
+	check_field(info, "purchase");
+	purchase_value = info["purchase"];
+
+	/* Storing data */
+	for (rapidjson::Value::ConstValueIterator itr = purchase_value.Begin(); itr != purchase_value.End(); itr++) {
+		rapidjson::Value::ConstMemberIterator currentElement = itr->FindMember("title");
+		pur_tmp.title = currentElement->value.GetString();
+
+		currentElement = itr->FindMember("quantity");
+		pur_tmp.quantity = atoi(currentElement->value.GetString());
+
+		purchase_queue.push(pur_tmp);
+	}
+
+	return;
+}
+
+void check_field(const rapidjson::Value &info, std::string field)
 {
 	/* Initialization */
 	char exception[80];
 
 	if (!info.HasMember(field.c_str())) {
 		snprintf(exception, 80, "No \"%s\" field", field.c_str());
-		throw (const char*)exception;
-	}
-	if (!info[field.c_str()].IsString()) {
-		snprintf(exception, 80, "\"%s\" field ins't a string type", field.c_str());
-		throw (const char*)exception;
+		LogPrinter::print(exception);
+		throw exception;
 	}
 }
 
@@ -294,6 +364,7 @@ void send_answer(int client_sockfd, rapidjson::Document &document)
 
 void send_error(int client_sockfd, std::string error)
 {
+	LogPrinter::print(error);
 	/* Initialization */
 	rapidjson::Document document;
 	rapidjson::Value value;
