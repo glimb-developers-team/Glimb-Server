@@ -45,8 +45,9 @@ private:
 	/*
 	* _processing_client() - receives message from client, who was added with new_client() (See below).
 	* It expects message in json format, so it checks for valid fileds in it.
+	* Gets number of client's socket descriptor in _clients[].
 	*/
-	void _processing_client(int client_sockfd);
+	void _processing_client(int client_num);
 
 	/*
 	* _register() - registers new user in database using object _db_connector.
