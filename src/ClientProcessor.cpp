@@ -32,8 +32,8 @@ void check_field(const rapidjson::Value &value, std::string field);
 
 ClientProcessor::ClientProcessor() : _db_connector(DbConnector()), _clients_counter(0)
 {
-	for (int i : _clients) {
-		i = -1;
+	for (int i = 0; i < MAX_CLIENTS; i++) {
+		_clients[i] = -1;
 	}
 }
 
@@ -49,13 +49,17 @@ ClientProcessor::~ClientProcessor()
 
 void ClientProcessor::new_client(int client_sockfd)
 {
+	int i;
+
 	if (_clients_counter < MAX_CLIENTS) {
-		for (int i = 0; i < MAX_CLIENTS; i++) {
+		for (i = 0; i < MAX_CLIENTS; i++) {
 			if (_clients[i] == -1) {
 				_clients[i] = client_sockfd;
+				_clients_counter++;
+				break;
 			}
 		}
-		std::thread client_thread(&ClientProcessor::_processing_client, this, _clients_counter++);
+		std::thread client_thread(&ClientProcessor::_processing_client, this, i);
 		client_thread.detach();
 	}
 	else {
@@ -119,7 +123,7 @@ void ClientProcessor::_processing_client(int client_num)
 				_send_purchase(_clients[client_num], document["info"]);
 			}
 		}
-		catch (const char *error) {
+		catch (const char * const error) {
 			LogPrinter::print(error);
 			send_error(_clients[client_num], error);
 		}
