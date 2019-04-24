@@ -22,7 +22,7 @@ public:
 	/*
 	* Server() - port number should be passed as a parameter.
 	* Creates socket and bind it.
-	* Can throw "Can't bind the socket" exception of type const char*.
+	* Can throw std::exception with "Can't bind the socket".
 	*/
 	Server(int port);
 
@@ -36,7 +36,7 @@ public:
 	/*
 	* get_client() - establishes connection with client and returns client's socket
 	* or -1 if timeout.
-	* A "Failed to accept connection to the client" exception of type const char* can be throwed.
+	* A "Failed to accept connection to the client" std::exception can be throwed.
 	*/
 	int get_client();
 };

@@ -20,7 +20,7 @@
 
 #define MAX_CLIENTS 5
 
-#include <string>
+
 #include "DbConnector.h"
 #include "rapidjson/document.h"
 

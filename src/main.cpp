@@ -11,6 +11,7 @@
 #include <string>
 #include <signal.h>
 #include <unistd.h>
+#include <exception>
 
 /*
 * This is the main file of Glimb-Server program.
@@ -66,8 +67,8 @@ int main()
 				}
 			}
 		}
-		catch (const char *error) {
-			LogPrinter::print(error);
+		catch (std::exception &error) {
+			LogPrinter::print(error.what());
 			return_code = -1;
 		}
 

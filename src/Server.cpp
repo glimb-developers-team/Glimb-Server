@@ -16,6 +16,7 @@
 #include "LogPrinter.h"
 #include <errno.h>
 #include <cstring>
+#include <exception>
 
 /*
 * This file defines class Server, described in Server.h.
@@ -36,7 +37,7 @@ Server::Server(int port) : _server_sockfd(socket(AF_INET, SOCK_STREAM/* | SOCK_N
 	/* Binding */
 	res = bind(_server_sockfd, (struct sockaddr*)&server_address, sizeof(server_address));
 	if (res != 0) {
-		throw "Can't bind the socket";
+		throw std::runtime_error("Can't bind the socket");
 	}
 }
 
@@ -76,7 +77,7 @@ int Server::get_client()
 		break;
 
 	case -1:	// Select failed
-		throw "Select was interrupted";
+		throw std::runtime_error("Select was interrupted");
 
 	default:	// There is an input connection
 		if (FD_ISSET(_server_sockfd, &inputs)) {
@@ -89,7 +90,7 @@ int Server::get_client()
 				result = client_sockfd;
 			}
 			else {
-				throw "Failed to accept connection with the client";
+				throw std::runtime_error("Failed to accept connection with the client");
 			}
 		}
 		break;

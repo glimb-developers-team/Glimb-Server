@@ -15,6 +15,7 @@
 #include <sys/types.h>
 #include <sys/socket.h>
 #include <unistd.h>
+#include <exception>
 #include "rapidjson/prettywriter.h"
 
 /*
@@ -93,19 +94,19 @@ void ClientProcessor::_processing_client(int client_num)
 
 			/* Some cheсks */
 			if (document.Parse(buffer).HasParseError()) {
-				throw "Request syntax error";
+				throw std::runtime_error("Request syntax error");
 			}
 			if (!document.HasMember("request")) {
-				throw "No request field";
+				throw std::runtime_error("No request field");
 			}
 			if (!document["request"].IsString()) {
-				throw "\"request\" field isn't a string type";
+				throw std::runtime_error("\"request\" field isn't a string type");
 			}
 			if (!document.HasMember("info")) {
-				throw "No info field";
+				throw std::runtime_error("No info field");
 			}
 			if (!document["info"].IsObject()) {
-				throw "Info isn't an object type";
+				throw std::runtime_error("Info isn't an object type");
 			}
 
 			/* Swithing requests */
@@ -123,9 +124,8 @@ void ClientProcessor::_processing_client(int client_num)
 				_send_purchase(_clients[client_num], document["info"]);
 			}
 		}
-		catch (const char * const error) {
-			LogPrinter::print(error);
-			send_error(_clients[client_num], error);
+		catch (const std::exception &error) {
+			send_error(_clients[client_num], error.what());
 		}
 
 		res = recv(_clients[client_num], buffer, BUF_SIZE, 0);
@@ -167,10 +167,10 @@ void ClientProcessor::_register(int client_sockfd, rapidjson::Value &info)
 	}
 	else {
 		if (db_answer.find("ERROR") && db_answer.find("Duplicate") && db_answer.find("PRIMARY")) {
-			throw "This user already exists";
+			throw std::runtime_error("This user already exists");
 		}
 		else {
-			throw "Unknown database error";
+			throw std::runtime_error("Unknown database error");
 		}
 	}
 }
@@ -200,7 +200,7 @@ void ClientProcessor::_login(int client_sockfd, rapidjson::Value &info)
 					name, last_name, middle_name, user_type, clients_numbers);
 
 	if (db_answer != 0) {	// Error
-		throw "Wrong number or password";
+		throw std::runtime_error("Wrong number or password");
 	}
 	else {			// Someone was found
 		/* Setting json */
@@ -345,9 +345,8 @@ void check_field(const rapidjson::Value &info, std::string field)
 	char exception[80];
 
 	if (!info.HasMember(field.c_str())) {
-		snprintf(exception, 80, "No \"%s\" field", field.c_str());
-		LogPrinter::print(exception);
-		throw exception;
+		snprintf(exception, 80, "No %s field", field.c_str());
+		throw std::runtime_error(exception);
 	}
 }
 
@@ -372,7 +371,6 @@ void send_answer(int client_sockfd, rapidjson::Document &document)
 
 void send_error(int client_sockfd, std::string error)
 {
-	LogPrinter::print(error);
 	/* Initialization */
 	rapidjson::Document document;
 	rapidjson::Value value;

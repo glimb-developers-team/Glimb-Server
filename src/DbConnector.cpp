@@ -17,6 +17,7 @@
 #include <cstdio>
 #include <cstring>
 #include <cstdlib>
+#include <exception>
 
 /*
 * This file defines class DbConnector, which is described in DbConnector.h.
@@ -28,13 +29,13 @@ DbConnector::DbConnector()
 	_conn_ptr = mysql_init(NULL);
 	if (_conn_ptr == NULL) {
 		LogPrinter::print(mysql_error(_conn_ptr));
-		throw "MySQL initialization failed";
+		throw std::runtime_error( "MySQL initialization failed");
 	}
 
 	_conn_ptr = mysql_real_connect(_conn_ptr, HOST, USER_NAME, PASSWORD, DB_NAME, 0, NULL, 0);
 	if (_conn_ptr == NULL) {
 		LogPrinter::print(mysql_error(_conn_ptr));
-		throw "MySQL connection failed";
+		throw std::runtime_error( "MySQL connection failed");
 	}
 
 	LogPrinter::print("Successfully connected to the MySQL server");
@@ -94,7 +95,7 @@ int DbConnector::login(std::string number, std::string password, std::string &na
 	if (res != 0) {	// Select error
 		snprintf(error, QUERY_SIZE, "MySQL error: %s;", mysql_error(_conn_ptr));
 		LogPrinter::print(error);
-		throw "MySQL select failed";
+		throw std::runtime_error( "MySQL select failed");
 	}
 
 	/* Return result */
@@ -119,7 +120,7 @@ int DbConnector::login(std::string number, std::string password, std::string &na
 		if (res != 0) {	// Select error
 			snprintf(error, QUERY_SIZE, "MySQL error: %s;", mysql_error(_conn_ptr));
 			LogPrinter::print(error);
-			throw "MySQL select failed";
+			throw std::runtime_error( "MySQL select failed");
 		}
 
 		mysql_res = mysql_use_result(_conn_ptr);
@@ -152,7 +153,7 @@ std::queue<material> DbConnector::get_materials()
 	if (res != 0) {	// Select error
 		snprintf(error, QUERY_SIZE, "MySQL error: %s;", mysql_error(_conn_ptr));
 		LogPrinter::print(error);
-		throw "MySQL select failed";
+		throw std::runtime_error( "MySQL select failed");
 	}
 
 	/* Return result */
@@ -190,7 +191,7 @@ void DbConnector::store_purchase(std::string foreman_num, std::string client_num
 	if (res != 0) {	// Insert error
 		snprintf(error, QUERY_SIZE, "MySQL error: %s", mysql_error(_conn_ptr));
 		LogPrinter::print(error);
-		throw "MySQL insert failed";
+		throw std::runtime_error( "MySQL insert failed");
 	}
 
 	mysql_res = mysql_use_result(_conn_ptr);
@@ -203,7 +204,7 @@ void DbConnector::store_purchase(std::string foreman_num, std::string client_num
 	if (res != 0) {	// Insert error
 		snprintf(error, QUERY_SIZE, "MySQL error: %s", mysql_error(_conn_ptr));
 		LogPrinter::print(error);
-		throw "MySQL insert failed";
+		throw std::runtime_error( "MySQL insert failed");
 	}
 
 	mysql_res = mysql_use_result(_conn_ptr);
@@ -221,7 +222,7 @@ void DbConnector::store_purchase(std::string foreman_num, std::string client_num
 		if (res != 0) {	// Insert error
 			snprintf(error, QUERY_SIZE, "MySQL error: %s", mysql_error(_conn_ptr));
 			LogPrinter::print(error);
-			throw "MySQL insert failed";
+			throw std::runtime_error( "MySQL insert failed");
 		}
 		purchases_queue.pop();
 	}
