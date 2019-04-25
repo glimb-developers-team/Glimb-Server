@@ -331,7 +331,7 @@ void ClientProcessor::_send_purchase(int client_sockfd, rapidjson::Value &info)
 		pur_tmp.title = currentElement->value.GetString();
 
 		currentElement = itr->FindMember("quantity");
-		pur_tmp.quantity = atoi(currentElement->value.GetString());
+		pur_tmp.quantity = currentElement->value.GetInt();
 
 		purchase_queue.push(pur_tmp);
 	}
