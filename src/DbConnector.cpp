@@ -8,7 +8,7 @@
 #define HOST		"localhost"
 #define USER_NAME	"GlimbAdmin"
 #define PASSWORD	"secret"
-#define DB_NAME		"Glimb"
+#define DB_NAME		"GlimbRu"
 
 #define QUERY_SIZE	1024
 
@@ -26,6 +26,8 @@
 
 DbConnector::DbConnector()
 {
+	char query[QUERY_SIZE];
+
 	_conn_ptr = mysql_init(NULL);
 	if (_conn_ptr == NULL) {
 		LogPrinter::print(mysql_error(_conn_ptr));
@@ -37,6 +39,9 @@ DbConnector::DbConnector()
 		LogPrinter::print(mysql_error(_conn_ptr));
 		throw std::runtime_error( "MySQL connection failed");
 	}
+
+	snprintf(query, QUERY_SIZE, "SET NAMES \'CP1251\'");
+	mysql_query(_conn_ptr, query);
 
 	LogPrinter::print("Successfully connected to the MySQL server");
 }
