@@ -23,8 +23,8 @@
 * See all methods documentation in the header file.
 */
 
-#define BUF_SIZE 512
-#define MATERIAL_SYM_LENGTH 128
+#define BUF_SIZE 1024
+#define MATERIAL_SYM_LENGTH 256
 
 void send_answer(int client_sockfd, rapidjson::Document &document);
 void send_error(int client_sockfd, std::string error);
