@@ -26,6 +26,7 @@ struct purchase {
 class DbConnector {
 private:
 	MYSQL *_conn_ptr;
+	int get_new_purchase_localid();
 
 public:
 	DbConnector();
