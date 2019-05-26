@@ -206,20 +206,12 @@ void ClientProcessor::_login(int client_sockfd, rapidjson::Value &info)
 		document.AddMember("type", "ok", alloc);
 		value.SetObject();
 
-		// tmp.SetString(rapidjson::StringRef(name.c_str()));
-		// value.AddMember("name", tmp, alloc);
 		add_strfield(value, "name", name, alloc);
 
-		// tmp.SetString(rapidjson::StringRef(last_name.c_str()));
-		// value.AddMember("last_name", tmp, alloc);
 		add_strfield(value, "last_name", last_name, alloc);
 
-		// tmp.SetString(rapidjson::StringRef(middle_name.c_str()));
-		// value.AddMember("middle_name", tmp, alloc);
 		add_strfield(value, "middle_name", middle_name, alloc);
 
-		// tmp.SetString(rapidjson::StringRef(user_type.c_str()));
-		// value.AddMember("user_type", tmp, alloc);
 		add_strfield(value, "user_type", user_type, alloc);
 
 		if (user_type == "foreman") {
@@ -264,11 +256,9 @@ void ClientProcessor::_send_materials(int client_sockfd)
 		(materials_queue.empty() != true)) {
 			mat_obj.SetObject();
 			material cur_material =  materials_queue.front();
-			// str.SetString(materials_queue.front().title.c_str(), alloc);
-			// mat_obj.AddMember("title", str, alloc);
+
 			add_strfield(mat_obj, "title", cur_material.title, alloc);
-			// str.SetString(materials_queue.front().unions.c_str(), alloc);
-			// mat_obj.AddMember("unions", str, alloc);
+
 			add_strfield(mat_obj, "unions", cur_material.unions, alloc);
 
 			str = rapidjson::Value(materials_queue.front().price);
