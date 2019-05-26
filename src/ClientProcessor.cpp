@@ -30,6 +30,7 @@ void send_answer(int client_sockfd, rapidjson::Document &document);
 void send_error(int client_sockfd, std::string error);
 void send_ok(int client_sockfd);
 void check_field(const rapidjson::Value &value, std::string field);
+void add_strfield(rapidjson::Value &value, const std::string field, const std::string str, rapidjson::Document::AllocatorType &alloc);
 
 ClientProcessor::ClientProcessor() : _db_connector(DbConnector()), _clients_counter(0)
 {
@@ -118,11 +119,12 @@ void ClientProcessor::_processing_client(int client_num)
 				_login(_clients[client_num], document["info"]);
 			}
 			else if (request == REQUEST_GET_MATERIALS) {
-				_get_materials(_clients[client_num]);
+				_send_materials(_clients[client_num]);
 			}
-			else if (request == REQUEST_SEND_PURCHASE) {
-				_send_purchase(_clients[client_num], document["info"]);
+			else if (request == REQUEST_SEND_PURCHASES) {
+				_recv_purchases(_clients[client_num], document["info"]);
 			}
+			// else if (request == REQUEST_GET_PURCHASES)
 		}
 		catch (const std::exception &error) {
 			send_error(_clients[client_num], error.what());
@@ -146,8 +148,6 @@ void ClientProcessor::_register(int client_sockfd, rapidjson::Value &info)
 	rapidjson::Document new_document;
 	rapidjson::Document::AllocatorType& alloc = new_document.GetAllocator();
 	rapidjson::Value value;
-
-	LogPrinter::print("Starting registrarion");
 
 	check_field(info, "name");
 	check_field(info, "last_name");
@@ -190,8 +190,6 @@ void ClientProcessor::_login(int client_sockfd, rapidjson::Value &info)
 	rapidjson::Value numbers_mas;
 	rapidjson::Document::AllocatorType& alloc = document.GetAllocator();
 
-	LogPrinter::print("Starting login");
-
 	check_field(info, "number");
 	check_field(info, "password");
 
@@ -208,17 +206,21 @@ void ClientProcessor::_login(int client_sockfd, rapidjson::Value &info)
 		document.AddMember("type", "ok", alloc);
 		value.SetObject();
 
-		tmp.SetString(rapidjson::StringRef(name.c_str()));
-		value.AddMember("name", tmp, alloc);
+		// tmp.SetString(rapidjson::StringRef(name.c_str()));
+		// value.AddMember("name", tmp, alloc);
+		add_strfield(value, "name", name, alloc);
 
-		tmp.SetString(rapidjson::StringRef(last_name.c_str()));
-		value.AddMember("last_name", tmp, alloc);
+		// tmp.SetString(rapidjson::StringRef(last_name.c_str()));
+		// value.AddMember("last_name", tmp, alloc);
+		add_strfield(value, "last_name", last_name, alloc);
 
-		tmp.SetString(rapidjson::StringRef(middle_name.c_str()));
-		value.AddMember("middle_name", tmp, alloc);
+		// tmp.SetString(rapidjson::StringRef(middle_name.c_str()));
+		// value.AddMember("middle_name", tmp, alloc);
+		add_strfield(value, "middle_name", middle_name, alloc);
 
-		tmp.SetString(rapidjson::StringRef(user_type.c_str()));
-		value.AddMember("user_type", tmp, alloc);
+		// tmp.SetString(rapidjson::StringRef(user_type.c_str()));
+		// value.AddMember("user_type", tmp, alloc);
+		add_strfield(value, "user_type", user_type, alloc);
 
 		if (user_type == "foreman") {
 			numbers_mas.SetArray();
@@ -237,7 +239,7 @@ void ClientProcessor::_login(int client_sockfd, rapidjson::Value &info)
 	}
 }
 
-void ClientProcessor::_get_materials(int client_sockfd)
+void ClientProcessor::_send_materials(int client_sockfd)
 {
 	/* Initialization */
 	std::queue<material> materials_queue = _db_connector.get_materials();
@@ -261,10 +263,14 @@ void ClientProcessor::_get_materials(int client_sockfd)
 		while ((BUF_SIZE - MATERIAL_SYM_LENGTH*(++i) >= 128) &&	// Until lost 128 bytes of free space
 		(materials_queue.empty() != true)) {
 			mat_obj.SetObject();
-			str.SetString(materials_queue.front().title.c_str(), alloc);
-			mat_obj.AddMember("title", str, alloc);
-			str.SetString(materials_queue.front().unions.c_str(), alloc);
-			mat_obj.AddMember("unions", str, alloc);
+			material cur_material =  materials_queue.front();
+			// str.SetString(materials_queue.front().title.c_str(), alloc);
+			// mat_obj.AddMember("title", str, alloc);
+			add_strfield(mat_obj, "title", cur_material.title, alloc);
+			// str.SetString(materials_queue.front().unions.c_str(), alloc);
+			// mat_obj.AddMember("unions", str, alloc);
+			add_strfield(mat_obj, "unions", cur_material.unions, alloc);
+
 			str = rapidjson::Value(materials_queue.front().price);
 			mat_obj.AddMember("price", str, alloc);
 
@@ -289,7 +295,7 @@ void ClientProcessor::_get_materials(int client_sockfd)
 	send_answer(client_sockfd, document);
 }
 
-void ClientProcessor::_send_purchase(int client_sockfd, rapidjson::Value &info)
+void ClientProcessor::_recv_purchases(int client_sockfd, rapidjson::Value &info)
 {
 	/* Initialization */
 	static std::string foreman_num;
@@ -339,6 +345,57 @@ void ClientProcessor::_send_purchase(int client_sockfd, rapidjson::Value &info)
 	return;
 }
 
+/* TO DO!!! */
+// void ClientProcessor::_send_purchases(int client_sockfd)
+// {
+// 	/* Initialization */
+// 	std::queue<purchase> purchases_queue = _db_connector.store_purchases();
+// 	rapidjson::Document document;
+// 	rapidjson::Value info;
+// 	rapidjson::Value purchases;
+// 	rapidjson::Value materials;
+// 	rapidjson::Value pur_obj;
+// 	rapidjson::Value mat_obj;
+// 	rapidjson::Value str;
+// 	rapidjson::Document::AllocatorType& alloc = document.GetAllocator();
+// 	int i;
+//
+// 	/* Sending data about all materials */
+// 	while (purchases_queue.empty() != true) {
+// 		/* Setting json */
+// 		document.SetObject();
+// 		document.AddMember("type", "ok", alloc);
+// 		info.SetObject();
+// 		purchases.SetArray();
+// 		materials.SetArray();
+// 		i = 0;
+//
+// 		while ((BUF_SIZE - MATERIAL_SYM_LENGTH*(++i) >= 128) &&	// Until lost 128 bytes of free space
+// 		(purchases_queue.empty() != true)) {
+// 			pur_obj.SetObject();
+// 			mat_obj.SetObject();
+//
+// 			str.SetString(purchases_queue.front().id.c_str(), alloc);
+// 			pur_obj.AddMember("id", str, alloc);
+//
+// 			str.SetString(purchases_queue.front().materials_queue.front().title.c_str(), alloc);
+// 			mat_obj.AddMember("title", str, alloc);
+// 			str.SetString(purchases_queue.front().materials_queue.front().unions.c_str(), alloc);
+// 			mat_obj.AddMember("unions", str, alloc);
+// 			str = rapidjson::Value(purchases_queue.front().materials_queue.front().price);
+// 			mat_obj.AddMember("price", str, alloc);
+//
+// 			materials.AddMember("materials", )
+// 			purchases.PushBack(pur_obj, alloc);
+// 			purchases_queue.pop();
+// 		}
+// 		info.AddMember("purchases", purchases, alloc);
+// 		document.AddMember("info", info, alloc);
+//
+// 		/* Sending json */
+// 		send_answer(client_sockfd, document);
+// }
+
 void check_field(const rapidjson::Value &info, std::string field)
 {
 	/* Initialization */
@@ -381,8 +438,9 @@ void send_error(int client_sockfd, std::string error)
 	document.SetObject();
 	document.AddMember("type", "error", alloc);
 	value.SetObject();
-	error_value.SetString(rapidjson::StringRef(error.c_str()));
-	value.AddMember("description", error_value, alloc);
+	// error_value.SetString(rapidjson::StringRef(error.c_str()));
+	// value.AddMember("description", error_value, alloc);
+	add_strfield(value, "description", error, alloc);
 	document.AddMember("info", value, alloc);
 
 	/* Sending answer */
@@ -404,4 +462,14 @@ void send_ok(int client_sockfd)
 
 	/* Sending answer */
 	send_answer(client_sockfd, document);
+}
+
+void add_strfield(rapidjson::Value &value, const std::string field, const std::string str, rapidjson::Document::AllocatorType &alloc)
+{
+	rapidjson::Value str_value;
+	rapidjson::Value field_value;
+
+	str_value.SetString(str.c_str(), alloc);
+	field_value.SetString(field.c_str(), alloc);
+	value.AddMember(field_value, str_value, alloc);
 }
