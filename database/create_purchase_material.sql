@@ -4,7 +4,7 @@
 
 CREATE TABLE purchase_material (
 	PurchaseId INT NOT NULL,
-	MaterialTitle VARCHAR(32) NOT NULL,
+	MaterialTitle VARCHAR(128) NOT NULL,
 	Quantity INT UNSIGNED,
 	Cost DOUBLE UNSIGNED,
 	FOREIGN KEY (PurchaseId) REFERENCES purchase (Id),
