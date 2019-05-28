@@ -73,9 +73,11 @@ private:
 	*/
 	void _login(int client_sockfd, rapidjson::Value &info);
 
-	void _get_materials(int client_sockfd);
+	void _send_materials(int client_sockfd);
 
-	void _send_purchase(int client_sockfd, rapidjson::Value &info);
+	void _recv_purchases(int client_sockfd, rapidjson::Value &info);
+
+	void _send_purchases(int client_sockfd, rapidjson::Value &info);
 
 public:
 	ClientProcessor();

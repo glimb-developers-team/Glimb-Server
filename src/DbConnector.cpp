@@ -18,6 +18,7 @@
 #include <cstring>
 #include <cstdlib>
 #include <exception>
+#include <tuple>
 
 /*
 * This file defines class DbConnector, which is described in DbConnector.h.
@@ -70,11 +71,7 @@ password.c_str(), type.c_str(), foreman_number.c_str());
 
 	/* Sending query */
 	res = mysql_query(_conn_ptr, query);
-	if (res != 0) {	// Insert error
-		snprintf(error, QUERY_SIZE, "MySQL error: %s", mysql_error(_conn_ptr));
-		LogPrinter::print(error);
-		return error;
-	}
+	_check_for_error(res);
 
 	return "OK";
 }
@@ -97,11 +94,7 @@ int DbConnector::login(std::string number, std::string password, std::string &na
 
 	/* Sending query */
 	res = mysql_query(_conn_ptr, query);
-	if (res != 0) {	// Select error
-		snprintf(error, QUERY_SIZE, "MySQL error: %s;", mysql_error(_conn_ptr));
-		LogPrinter::print(error);
-		throw std::runtime_error( "MySQL select failed");
-	}
+	_check_for_error(res);
 
 	/* Return result */
 	mysql_res = mysql_use_result(_conn_ptr);
@@ -122,11 +115,7 @@ int DbConnector::login(std::string number, std::string password, std::string &na
 		snprintf(query, QUERY_SIZE, "SELECT PhoneNumber FROM user WHERE ForemanPhoneNumber = \"%s\";", number.c_str());
 
 		res = mysql_query(_conn_ptr, query);
-		if (res != 0) {	// Select error
-			snprintf(error, QUERY_SIZE, "MySQL error: %s;", mysql_error(_conn_ptr));
-			LogPrinter::print(error);
-			throw std::runtime_error( "MySQL select failed");
-		}
+		_check_for_error(res);
 
 		mysql_res = mysql_use_result(_conn_ptr);
 		while ((sqlrow = mysql_fetch_row(mysql_res)) != NULL) {
@@ -155,11 +144,7 @@ std::queue<material> DbConnector::get_materials()
 
 	/* Sending query */
 	res = mysql_query(_conn_ptr, query);
-	if (res != 0) {	// Select error
-		snprintf(error, QUERY_SIZE, "MySQL error: %s;", mysql_error(_conn_ptr));
-		LogPrinter::print(error);
-		throw std::runtime_error( "MySQL select failed");
-	}
+	_check_for_error(res);
 
 	/* Return result */
 	mysql_res = mysql_use_result(_conn_ptr);
@@ -190,18 +175,14 @@ void DbConnector::store_purchase(std::string foreman_num, std::string client_num
 	MYSQL_RES *mysql_res;
 	MYSQL_ROW sqlrow;
 
-	local_id = get_new_purchase_localid();
+	local_id = _get_new_purchase_localid();
 
 	snprintf(query, QUERY_SIZE, "INSERT INTO purchase(ClientNum, ForemanNum, LocalId) VALUES(\"%s\", \"%s\", %d)",
 		client_num.c_str(), foreman_num.c_str(), local_id);
 
 	/* Sending query */
 	res = mysql_query(_conn_ptr, query);
-	if (res != 0) {	// Insert error
-		snprintf(error, QUERY_SIZE, "MySQL error: %s", mysql_error(_conn_ptr));
-		LogPrinter::print(error);
-		throw std::runtime_error( "MySQL insert failed");
-	}
+	_check_for_error(res);
 
 	mysql_res = mysql_use_result(_conn_ptr);
 	mysql_free_result(mysql_res);
@@ -210,11 +191,7 @@ void DbConnector::store_purchase(std::string foreman_num, std::string client_num
 
 	/* Sending query */
 	res = mysql_query(_conn_ptr, query);
-	if (res != 0) {	// Insert error
-		snprintf(error, QUERY_SIZE, "MySQL error: %s", mysql_error(_conn_ptr));
-		LogPrinter::print(error);
-		throw std::runtime_error( "MySQL insert failed");
-	}
+	_check_for_error(res);
 
 	mysql_res = mysql_use_result(_conn_ptr);
 	sqlrow = mysql_fetch_row(mysql_res);
@@ -228,16 +205,84 @@ void DbConnector::store_purchase(std::string foreman_num, std::string client_num
 
 		/* Sending query */
 		res = mysql_query(_conn_ptr, query);
-		if (res != 0) {	// Insert error
-			snprintf(error, QUERY_SIZE, "MySQL error: %s", mysql_error(_conn_ptr));
-			LogPrinter::print(error);
-			throw std::runtime_error( "MySQL insert failed");
-		}
+		_check_for_error(res);
+
 		purchases_queue.pop();
 	}
 }
 
-int DbConnector::get_new_purchase_localid()
+std::queue<purchase_to_send> DbConnector::get_purchases(std::string client_num, std::string foreman_num)
+{
+	/* Initialization */
+	std::queue<purchase_to_send> purchases_queue;
+	char query[QUERY_SIZE];
+	char error[QUERY_SIZE];
+	int res;
+	MYSQL_RES *mysql_res;
+	MYSQL_ROW sqlrow;
+	std::queue<std::tuple<int, int, double>> purdata_queue;
+
+	/* Setting query to get Ids */
+	snprintf(query, QUERY_SIZE,
+		"SELECT Id, LocalId, TotalCost FROM purchase WHERE ClienNum = \"%s\" AND ForemanNum = \"%s\";",
+		client_num.c_str(), foreman_num.c_str());
+
+	/* Sending query */
+	res = mysql_query(_conn_ptr, query);
+	_check_for_error(res);
+
+	/* Pushing all ids to the queue */
+	mysql_res = mysql_use_result(_conn_ptr);
+	sqlrow = mysql_fetch_row(mysql_res);
+	while (sqlrow != NULL) {
+		purdata_queue.push(std::make_tuple(atoi(sqlrow[0]), atoi(sqlrow[1]), atof(sqlrow[2])));
+		sqlrow = mysql_fetch_row(mysql_res);
+	}
+	mysql_free_result(mysql_res);
+
+	/* Filling result queue */
+	while (!purdata_queue.empty()) {
+		/* Initialization */
+		std::tuple<int, int, double> cur_data = purdata_queue.front();
+		std::queue<selected_material> cur_materials_queue;
+		purchase_to_send cur_purchase;
+
+		/* Setting query to get current purchase materials */
+		snprintf(query, QUERY_SIZE,
+			"SELECT MaterialTitle, Quantity, Cost WHERE PurchaseId = %d;",
+			std::get<1>(cur_data));
+
+		/* Sending query */
+		res = mysql_query(_conn_ptr, query);
+		_check_for_error(res);
+
+		/* Getting all materials */
+		mysql_res = mysql_use_result(_conn_ptr);
+		sqlrow = mysql_fetch_row(mysql_res);
+		while (sqlrow != NULL) {
+			selected_material cur_material;
+
+			cur_material.title = sqlrow[0];
+			cur_material.quantity = atoi(sqlrow[1]);
+			cur_material.cost = atof(sqlrow[2]);
+
+			cur_materials_queue.push(cur_material);
+
+			sqlrow = mysql_fetch_row(mysql_res);
+		}
+		mysql_free_result(mysql_res);
+
+		cur_purchase.id = std::get<0>(cur_data);
+		cur_purchase.materials = cur_materials_queue;
+		cur_purchase.total_cost = std::get<2>(cur_data);
+
+		purchases_queue.push(cur_purchase);
+
+		purdata_queue.pop();
+	}
+}
+
+int DbConnector::_get_new_purchase_localid()
 {
 	/* Initialization */
 	char query[QUERY_SIZE];
@@ -247,7 +292,7 @@ int DbConnector::get_new_purchase_localid()
 	MYSQL_RES *mysql_res;
 	MYSQL_ROW sqlrow;
 
-	snprintf(query, QUERY_SIZE, "SELECT MAX(LocalId) FROM purchase");
+	snprintf(query, QUERY_SIZE, "SELECT MAX(LocalId) FROM purchase;");
 
 	res = mysql_query(_conn_ptr, query);
 	if (res != 0) {	// Select failed
@@ -262,4 +307,15 @@ int DbConnector::get_new_purchase_localid()
 
 	mysql_free_result(mysql_res);
 	return local_id;
+}
+
+void DbConnector::_check_for_error(int res)
+{
+	char error[QUERY_SIZE];
+
+	if (res != 0) {	// Mysql error
+		snprintf(error, QUERY_SIZE, "MySQL error: %s", mysql_error(_conn_ptr));
+		LogPrinter::print(error);
+		throw std::runtime_error("MySQL query failed");
+	}
 }

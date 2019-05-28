@@ -18,15 +18,34 @@ struct material {
 	double price;
 };
 
+struct selected_material {
+	std::string title;
+	double quantity;
+	double cost;
+};
+
 struct purchase {
 	std::string title;
 	int quantity;
 };
 
+struct purchase_to_send {
+	int id;
+	std::queue<selected_material> materials;
+	double total_cost;
+};
+
 class DbConnector {
 private:
 	MYSQL *_conn_ptr;
-	int get_new_purchase_localid();
+
+	int _get_new_purchase_localid();
+
+	/*
+	* check_for_error() - checks res for error.
+	* If there is some error it logs message and throws an exception.
+	*/
+	void _check_for_error(int res);
 
 public:
 	DbConnector();
@@ -43,6 +62,8 @@ public:
 	std::queue<material> get_materials();
 
 	void store_purchase(std::string foreman_num, std::string client_num, std::queue<purchase> purchases_queue);
+
+	std::queue<purchase_to_send> get_purchases(std::string client_num, std::string foreman_name);
 };
 
 #endif // DB_CONNECTOR_H
