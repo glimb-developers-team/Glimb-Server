@@ -23,7 +23,7 @@
 * See all methods documentation in header file.
 */
 
-Server::Server(int port) : _server_sockfd(socket(AF_INET, SOCK_STREAM/* | SOCK_NONBLOCK*/, 0)), _port(port)
+Server::Server(int port) : _server_sockfd(socket(AF_INET, SOCK_STREAM, 0)), _port(port)
 {
 	/* Initialization */
 	struct sockaddr_in server_address;
