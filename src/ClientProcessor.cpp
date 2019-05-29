@@ -27,7 +27,7 @@
 #define BUF_SIZE 1024
 #define MATERIAL_SYM_LENGTH 256
 #define PURCHASE_SYM_LENGTH 256
-#define TIMEOUT 10
+#define TIMEOUT 5
 
 void send_answer(int client_sockfd, rapidjson::Document &document);
 void send_error(int client_sockfd, std::string error);
