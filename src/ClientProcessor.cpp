@@ -9,6 +9,7 @@
 #include "requests.h"
 #include "LogPrinter.h"
 #include <thread>
+#include <chrono>
 #include <cstring>
 #include <string>
 #include <queue>
@@ -467,10 +468,17 @@ void check_field(const rapidjson::Value &info, std::string field)
 void send_answer(int client_sockfd, rapidjson::Document &document)
 {
 	/* Initialization */
+	static std::chrono::milliseconds last_time;
+	std::chrono::milliseconds now = std::chrono::duration_cast<std::chrono::milliseconds>(std::chrono::system_clock::now().time_since_epoch());
 	rapidjson::StringBuffer string_buf;
 	rapidjson::PrettyWriter<rapidjson::StringBuffer> writer(string_buf);
 	char buffer[BUF_SIZE];
 	char log_buffer[BUF_SIZE];
+
+	if((now - last_time).count() < 100) {
+		LogPrinter::print("Timeout");
+		usleep(100000);
+	}
 
 	/* Conversion to the char* */
 	document.Accept(writer);
@@ -481,6 +489,7 @@ void send_answer(int client_sockfd, rapidjson::Document &document)
 		client_sockfd, buffer);
 	LogPrinter::print(log_buffer);
 	send(client_sockfd, buffer, BUF_SIZE, 0);
+	last_time = std::chrono::duration_cast<std::chrono::milliseconds>(std::chrono::system_clock::now().time_since_epoch());
 }
 
 void send_error(int client_sockfd, std::string error)
@@ -495,8 +504,6 @@ void send_error(int client_sockfd, std::string error)
 	document.SetObject();
 	document.AddMember("type", "error", alloc);
 	value.SetObject();
-	// error_value.SetString(rapidjson::StringRef(error.c_str()));
-	// value.AddMember("description", error_value, alloc);
 	add_strfield(value, "description", error, alloc);
 	document.AddMember("info", value, alloc);
 
