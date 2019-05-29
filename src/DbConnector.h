@@ -12,6 +12,12 @@
 #include <queue>
 #include "mysql.h"
 
+enum status {
+	STATUS_FALSE,
+	STATUS_TRUE,
+	STATUS_NULL
+};
+
 struct material {
 	std::string title;
 	std::string unions;
@@ -35,13 +41,14 @@ struct purchase_to_send {
 	int id;
 	std::queue<selected_material> materials;
 	double total_cost;
+	status st;
 };
 
 class DbConnector {
 private:
 	MYSQL *_conn_ptr;
 
-	int _get_new_purchase_localid();
+	int _get_new_purchase_localid(std::string client_num, std::string foreman_num);
 
 	/*
 	* check_for_error() - checks res for error.

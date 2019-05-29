@@ -25,7 +25,7 @@
 
 #define BUF_SIZE 1024
 #define MATERIAL_SYM_LENGTH 256
-#define PURCHASE_SYM_LENGTH 140
+#define PURCHASE_SYM_LENGTH 256
 
 void send_answer(int client_sockfd, rapidjson::Document &document);
 void send_error(int client_sockfd, std::string error);
@@ -122,8 +122,8 @@ void ClientProcessor::_processing_client(int client_num)
 			else if (request == REQUEST_GET_MATERIALS) {
 				_send_materials(_clients[client_num]);
 			}
-			else if (request == REQUEST_SEND_PURCHASES) {
-				_recv_purchases(_clients[client_num], document["info"]);
+			else if (request == REQUEST_SEND_PURCHASE) {
+				_recv_purchase(_clients[client_num], document["info"]);
 			}
 			else if (request == REQUEST_GET_PURCHASES) {
 				_send_purchases(_clients[client_num], document["info"]);
@@ -288,8 +288,9 @@ void ClientProcessor::_send_materials(int client_sockfd)
 	send_answer(client_sockfd, document);
 }
 
-void ClientProcessor::_recv_purchases(int client_sockfd, rapidjson::Value &info)
+void ClientProcessor::_recv_purchase(int client_sockfd, rapidjson::Value &info)
 {
+	LogPrinter::print("Starting _recv_purchase");
 	/* Initialization */
 	static purchase_to_store purchase;
 	rapidjson::Document document;
@@ -306,8 +307,10 @@ void ClientProcessor::_recv_purchases(int client_sockfd, rapidjson::Value &info)
 	if (info.HasMember("description")) {
 		if (strcmp(info["description"].GetString(), "end") == 0) {
 			/* Storing data in db */
+			LogPrinter::print("Pushing to db");
 			_db_connector.store_purchase(purchase);
 			purchase = purchase_to_store();
+			LogPrinter::print("Sending answer");
 			send_answer(client_sockfd, document);
 			return;
 		}
@@ -326,6 +329,7 @@ void ClientProcessor::_recv_purchases(int client_sockfd, rapidjson::Value &info)
 	purchase_value = info["purchase"];
 
 	/* Storing data */
+	LogPrinter::print("Starting storing data");
 	for (rapidjson::Value::ConstValueIterator itr = purchase_value.Begin(); itr != purchase_value.End(); itr++) {
 		selected_material cur_material;
 		rapidjson::Value::ConstMemberIterator currentElement = itr->FindMember("title");
@@ -364,8 +368,8 @@ void ClientProcessor::_send_purchases(int client_sockfd, rapidjson::Value &info)
 							foreman_num_value.GetString());
 
 	while (!purchases_queue.empty()) {
-		int i = 0;
-		purchase_to_send cur_purchase = purchases_queue.front();
+		purchase_to_send &cur_purchase = purchases_queue.front();
+		std::string str_status;
 
 		/* Sending purchase initial message */
 		answer.SetObject();
@@ -375,6 +379,18 @@ void ClientProcessor::_send_purchases(int client_sockfd, rapidjson::Value &info)
 					rapidjson::Value(cur_purchase.id), alloc);
 		answer_info.AddMember("total_cost",
 					rapidjson::Value(cur_purchase.total_cost), alloc);
+		switch (cur_purchase.st) {
+		case STATUS_TRUE:
+			str_status = "true";
+			break;
+		case STATUS_FALSE:
+			str_status = "false";
+			break;
+		default:
+			str_status = "null";
+			break;
+		}
+		add_strfield(answer_info, "status", str_status, alloc);
 		answer_info.AddMember("method", "start", alloc);
 		answer.AddMember("info", answer_info, alloc);
 		send_answer(client_sockfd, answer);
@@ -382,6 +398,7 @@ void ClientProcessor::_send_purchases(int client_sockfd, rapidjson::Value &info)
 		/* Sending materials in the current purchase */
 		while (!cur_purchase.materials.empty()) {
 			rapidjson::Value materials;
+			int i = 0;
 
 			answer.SetObject();
 			answer.AddMember("type", "ok", alloc);
@@ -392,7 +409,7 @@ void ClientProcessor::_send_purchases(int client_sockfd, rapidjson::Value &info)
 			while (BUF_SIZE - PURCHASE_SYM_LENGTH * (++i) >= 128 &&
 			!cur_purchase.materials.empty()) {
 				rapidjson::Value cur_material_obj;
-				selected_material cur_material = cur_purchase.materials.front();
+				selected_material &cur_material = cur_purchase.materials.front();
 
 				cur_material_obj.SetObject();
 

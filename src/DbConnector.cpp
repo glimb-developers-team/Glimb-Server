@@ -19,11 +19,19 @@
 #include <cstdlib>
 #include <exception>
 #include <tuple>
+#include <utility>
 
 /*
 * This file defines class DbConnector, which is described in DbConnector.h.
 * See all methods documentation in the header file.
 */
+
+struct purchase_db {
+	int id;
+	int local_id;
+	double total_cost;
+	status st;
+};
 
 DbConnector::DbConnector()
 {
@@ -166,6 +174,7 @@ std::queue<material> DbConnector::get_materials()
 void DbConnector::store_purchase(purchase_to_store purchase)
 {
 	/* Initialization */
+	LogPrinter::print("Starting store_purchase");
 	char query[QUERY_SIZE];
 	char error[QUERY_SIZE];
 	int purchase_id;
@@ -174,7 +183,7 @@ void DbConnector::store_purchase(purchase_to_store purchase)
 	MYSQL_RES *mysql_res;
 	MYSQL_ROW sqlrow;
 
-	local_id = _get_new_purchase_localid();
+	local_id = _get_new_purchase_localid(purchase.client_num, purchase.foreman_num);
 
 	snprintf(query, QUERY_SIZE,
 		"INSERT INTO purchase(ClientNum, ForemanNum, TotalCost, LocalId) VALUES(\"%s\", \"%s\", %lf, %d);",
@@ -200,8 +209,7 @@ void DbConnector::store_purchase(purchase_to_store purchase)
 
 	/* Pushing data to the storage */
 	while (!purchase.materials.empty()) {
-		selected_material mat;
-		mat = purchase.materials.front();
+		selected_material mat = purchase.materials.front();
 		snprintf(query, QUERY_SIZE,
 			"INSERT INTO purchase_material(PurchaseId, MaterialTitle, Quantity, Cost) VALUES(%d, \"%s\", %lf, %lf);",
 			purchase_id, mat.title.c_str(), mat.quantity, mat.cost);
@@ -223,11 +231,11 @@ std::queue<purchase_to_send> DbConnector::get_purchases(std::string client_num, 
 	int res;
 	MYSQL_RES *mysql_res;
 	MYSQL_ROW sqlrow;
-	std::queue<std::tuple<int, int, double>> purdata_queue;
+	std::queue<purchase_db> purdata_queue;
 
 	/* Setting query to get Ids */
 	snprintf(query, QUERY_SIZE,
-		"SELECT Id, LocalId, TotalCost FROM purchase WHERE ClienNum = \"%s\" AND ForemanNum = \"%s\";",
+		"SELECT Id, LocalId, TotalCost, Status FROM purchase WHERE ClientNum = \"%s\" AND ForemanNum = \"%s\";",
 		client_num.c_str(), foreman_num.c_str());
 
 	/* Sending query */
@@ -238,7 +246,27 @@ std::queue<purchase_to_send> DbConnector::get_purchases(std::string client_num, 
 	mysql_res = mysql_use_result(_conn_ptr);
 	sqlrow = mysql_fetch_row(mysql_res);
 	while (sqlrow != NULL) {
-		purdata_queue.push(std::make_tuple(atoi(sqlrow[0]), atoi(sqlrow[1]), atof(sqlrow[2])));
+		purchase_db cur_purchase_db;
+
+		cur_purchase_db.id = atoi(sqlrow[0]);
+		cur_purchase_db.local_id = atoi(sqlrow[1]);
+		cur_purchase_db.total_cost = atof(sqlrow[2]);
+		if (sqlrow[3] == NULL) {
+			cur_purchase_db.st = STATUS_NULL;
+		}
+		else {
+			if (strcmp(sqlrow[3], "0") == 0) {
+				cur_purchase_db.st = STATUS_FALSE;
+			}
+			else if (strcmp(sqlrow[3], "1") == 0) {
+				cur_purchase_db.st = STATUS_TRUE;
+			}
+			else if (strcmp(sqlrow[3], "NULL") == 0) {
+				cur_purchase_db.st = STATUS_NULL;
+			}
+		}
+
+		purdata_queue.push(cur_purchase_db);
 		sqlrow = mysql_fetch_row(mysql_res);
 	}
 	mysql_free_result(mysql_res);
@@ -246,14 +274,13 @@ std::queue<purchase_to_send> DbConnector::get_purchases(std::string client_num, 
 	/* Filling result queue */
 	while (!purdata_queue.empty()) {
 		/* Initialization */
-		std::tuple<int, int, double> cur_data = purdata_queue.front();
-		std::queue<selected_material> cur_materials_queue;
+		purchase_db cur_purchase_db = purdata_queue.front();
 		purchase_to_send cur_purchase;
 
 		/* Setting query to get current purchase materials */
 		snprintf(query, QUERY_SIZE,
-			"SELECT MaterialTitle, Quantity, Cost WHERE PurchaseId = %d;",
-			std::get<1>(cur_data));
+			"SELECT MaterialTitle, Quantity, Cost FROM purchase_material WHERE PurchaseId = %d;",
+			cur_purchase_db.id);
 
 		/* Sending query */
 		res = mysql_query(_conn_ptr, query);
@@ -269,23 +296,22 @@ std::queue<purchase_to_send> DbConnector::get_purchases(std::string client_num, 
 			cur_material.quantity = atof(sqlrow[1]);
 			cur_material.cost = atof(sqlrow[2]);
 
-			cur_materials_queue.push(cur_material);
-
+			cur_purchase.materials.push(cur_material);
 			sqlrow = mysql_fetch_row(mysql_res);
 		}
 		mysql_free_result(mysql_res);
 
-		cur_purchase.id = std::get<0>(cur_data);
-		cur_purchase.materials = cur_materials_queue;
-		cur_purchase.total_cost = std::get<2>(cur_data);
+		cur_purchase.id = cur_purchase_db.local_id;
+		cur_purchase.total_cost = cur_purchase_db.total_cost;
+		cur_purchase.st = cur_purchase_db.st;
 
 		purchases_queue.push(cur_purchase);
-
 		purdata_queue.pop();
 	}
+	return purchases_queue;
 }
 
-int DbConnector::_get_new_purchase_localid()
+int DbConnector::_get_new_purchase_localid(std::string client_num, std::string foreman_num)
 {
 	/* Initialization */
 	char query[QUERY_SIZE];
@@ -295,20 +321,29 @@ int DbConnector::_get_new_purchase_localid()
 	MYSQL_RES *mysql_res;
 	MYSQL_ROW sqlrow;
 
-	snprintf(query, QUERY_SIZE, "SELECT MAX(LocalId) FROM purchase;");
+	snprintf(query, QUERY_SIZE,
+		"SELECT MAX(LocalId) FROM purchase WHERE ClientNum = \"%s\" AND ForemanNum = \"%s\"",
+		client_num.c_str(), foreman_num.c_str());
 
 	res = mysql_query(_conn_ptr, query);
-	if (res != 0) {	// Select failed
-		snprintf(error, QUERY_SIZE, "MySQL error: %s", mysql_error(_conn_ptr));
-		LogPrinter::print(error);
-		throw std::runtime_error("MySQL select failed");
-	}
+	_check_for_error(res);
 
 	mysql_res = mysql_use_result(_conn_ptr);
-	sqlrow = mysql_fetch_row(mysql_res);
-	local_id = atoi(sqlrow[0]) + 1;
+	if (mysql_res == NULL) {
+		local_id = 1;
+	}
+	else {
+		sqlrow = mysql_fetch_row(mysql_res);
+		if (sqlrow[0] == NULL) {
+			local_id = 1;
+		}
+		else {
+			local_id = atoi(sqlrow[0]) + 1;
+		}
 
-	mysql_free_result(mysql_res);
+		mysql_free_result(mysql_res);
+	}
+
 	return local_id;
 }
 
