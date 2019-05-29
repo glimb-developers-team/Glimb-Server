@@ -27,7 +27,7 @@
 #define BUF_SIZE 1024
 #define MATERIAL_SYM_LENGTH 256
 #define PURCHASE_SYM_LENGTH 256
-#define TIMEOUT 100
+#define TIMEOUT 10
 
 void send_answer(int client_sockfd, rapidjson::Document &document);
 void send_error(int client_sockfd, std::string error);
@@ -480,7 +480,7 @@ void send_answer(int client_sockfd, rapidjson::Document &document)
 	diff = now - last_time;
 	if(diff.count() < TIMEOUT) {
 		LogPrinter::print("Timeout for " + std::to_string(diff.count()) + " milliseconds");
-		usleep(diff.count() * 1000);
+		usleep((TIMEOUT - diff.count()) * 1000);
 	}
 
 	/* Conversion to the char* */
