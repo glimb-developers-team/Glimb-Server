@@ -479,8 +479,9 @@ void send_answer(int client_sockfd, rapidjson::Document &document)
 
 	diff = now - last_time;
 	if(diff.count() < TIMEOUT) {
-		LogPrinter::print("Timeout for " + std::to_string(diff.count()) + " milliseconds");
-		usleep((TIMEOUT - diff.count()) * 1000);
+		int timeout = TIMEOUT - diff;
+		LogPrinter::print("Timeout for " + std::to_string(timeout) + " milliseconds");
+		usleep(timeout * 1000); // Cause usleep() gets microseconds
 	}
 
 	/* Conversion to the char* */
