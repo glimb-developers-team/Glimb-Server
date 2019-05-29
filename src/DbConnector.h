@@ -24,9 +24,11 @@ struct selected_material {
 	double cost;
 };
 
-struct purchase {
-	std::string title;
-	int quantity;
+struct purchase_to_store {
+	std::string client_num;
+	std::string foreman_num;
+	std::queue<selected_material> materials;
+	double total_cost;
 };
 
 struct purchase_to_send {
@@ -61,7 +63,7 @@ public:
 
 	std::queue<material> get_materials();
 
-	void store_purchase(std::string foreman_num, std::string client_num, std::queue<purchase> purchases_queue);
+	void store_purchase(purchase_to_store purchase);
 
 	std::queue<purchase_to_send> get_purchases(std::string client_num, std::string foreman_name);
 };

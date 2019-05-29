@@ -111,7 +111,7 @@ void ClientProcessor::_processing_client(int client_num)
 				throw std::runtime_error("Info isn't an object type");
 			}
 
-			/* Swithing requests */
+			/* Switсhing requests */
 			request = document["request"].GetString();
 			if (request == REQUEST_REGISTRATION) {
 				_register(_clients[client_num], document["info"]);
@@ -125,7 +125,9 @@ void ClientProcessor::_processing_client(int client_num)
 			else if (request == REQUEST_SEND_PURCHASES) {
 				_recv_purchases(_clients[client_num], document["info"]);
 			}
-			// else if (request == REQUEST_GET_PURCHASES)
+			else if (request == REQUEST_GET_PURCHASES) {
+				_send_purchases(_clients[client_num], document["info"]);
+			}
 		}
 		catch (const std::exception &error) {
 			send_error(_clients[client_num], error.what());
@@ -289,10 +291,7 @@ void ClientProcessor::_send_materials(int client_sockfd)
 void ClientProcessor::_recv_purchases(int client_sockfd, rapidjson::Value &info)
 {
 	/* Initialization */
-	static std::string foreman_num;
-	static std::string client_num;
-	static std::queue<purchase> purchase_queue;
-	purchase pur_tmp;
+	static purchase_to_store purchase;
 	rapidjson::Document document;
 	rapidjson::Value purchase_value;
 	rapidjson::Value output_info;
@@ -306,37 +305,44 @@ void ClientProcessor::_recv_purchases(int client_sockfd, rapidjson::Value &info)
 	/* If it's the end of translation */
 	if (info.HasMember("description")) {
 		if (strcmp(info["description"].GetString(), "end") == 0) {
-			_db_connector.store_purchase(foreman_num, client_num, purchase_queue);
-			purchase_queue = std::queue<purchase>();
+			/* Storing data in db */
+			_db_connector.store_purchase(purchase);
+			purchase = purchase_to_store();
 			send_answer(client_sockfd, document);
 			return;
 		}
 	}
 
 	check_field(info, "foreman_num");
-	foreman_num = info["foreman_num"].GetString();
+	purchase.foreman_num = info["foreman_num"].GetString();
 
 	check_field(info, "client_num");
-	client_num = info["client_num"].GetString();
+	purchase.client_num = info["client_num"].GetString();
+
+	check_field(info, "total_cost");
+	purchase.total_cost = info["total_cost"].GetDouble();
 
 	check_field(info, "purchase");
 	purchase_value = info["purchase"];
 
 	/* Storing data */
 	for (rapidjson::Value::ConstValueIterator itr = purchase_value.Begin(); itr != purchase_value.End(); itr++) {
+		selected_material cur_material;
 		rapidjson::Value::ConstMemberIterator currentElement = itr->FindMember("title");
-		pur_tmp.title = currentElement->value.GetString();
+		cur_material.title = currentElement->value.GetString();
 
 		currentElement = itr->FindMember("quantity");
-		pur_tmp.quantity = currentElement->value.GetInt();
+		cur_material.quantity = currentElement->value.GetDouble();
 
-		purchase_queue.push(pur_tmp);
+		currentElement = itr->FindMember("cost");
+		cur_material.cost = currentElement->value.GetDouble();
+
+		purchase.materials.push(cur_material);
 	}
 
 	return;
 }
 
-/* TO DO!!! */
 void ClientProcessor::_send_purchases(int client_sockfd, rapidjson::Value &info)
 {
 	/* Initialization */

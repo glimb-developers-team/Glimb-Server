@@ -163,22 +163,22 @@ std::queue<material> DbConnector::get_materials()
 	return materials_queue;
 }
 
-void DbConnector::store_purchase(std::string foreman_num, std::string client_num, std::queue<purchase> purchases_queue)
+void DbConnector::store_purchase(purchase_to_store purchase)
 {
 	/* Initialization */
 	char query[QUERY_SIZE];
 	char error[QUERY_SIZE];
 	int purchase_id;
 	int local_id;
-	purchase p;
 	int res;
 	MYSQL_RES *mysql_res;
 	MYSQL_ROW sqlrow;
 
 	local_id = _get_new_purchase_localid();
 
-	snprintf(query, QUERY_SIZE, "INSERT INTO purchase(ClientNum, ForemanNum, LocalId) VALUES(\"%s\", \"%s\", %d)",
-		client_num.c_str(), foreman_num.c_str(), local_id);
+	snprintf(query, QUERY_SIZE,
+		"INSERT INTO purchase(ClientNum, ForemanNum, TotalCost, LocalId) VALUES(\"%s\", \"%s\", %lf, %d);",
+		purchase.client_num.c_str(), purchase.foreman_num.c_str(), purchase.total_cost, local_id);
 
 	/* Sending query */
 	res = mysql_query(_conn_ptr, query);
@@ -187,7 +187,7 @@ void DbConnector::store_purchase(std::string foreman_num, std::string client_num
 	mysql_res = mysql_use_result(_conn_ptr);
 	mysql_free_result(mysql_res);
 
-	snprintf(query, QUERY_SIZE, "SELECT LAST_INSERT_ID()");
+	snprintf(query, QUERY_SIZE, "SELECT LAST_INSERT_ID();");
 
 	/* Sending query */
 	res = mysql_query(_conn_ptr, query);
@@ -199,15 +199,18 @@ void DbConnector::store_purchase(std::string foreman_num, std::string client_num
 	mysql_free_result(mysql_res);
 
 	/* Pushing data to the storage */
-	while (!purchases_queue.empty()) {
-		p = purchases_queue.front();
-		snprintf(query, QUERY_SIZE, "INSERT INTO purchase_material(PurchaseId, MaterialTitle, Quantity) VALUES(\"%d\", \"%s\", \"%d\")", purchase_id, p.title.c_str(), p.quantity);
+	while (!purchase.materials.empty()) {
+		selected_material mat;
+		mat = purchase.materials.front();
+		snprintf(query, QUERY_SIZE,
+			"INSERT INTO purchase_material(PurchaseId, MaterialTitle, Quantity, Cost) VALUES(%d, \"%s\", %lf, %lf);",
+			purchase_id, mat.title.c_str(), mat.quantity, mat.cost);
 
 		/* Sending query */
 		res = mysql_query(_conn_ptr, query);
 		_check_for_error(res);
 
-		purchases_queue.pop();
+		purchase.materials.pop();
 	}
 }
 
@@ -263,7 +266,7 @@ std::queue<purchase_to_send> DbConnector::get_purchases(std::string client_num, 
 			selected_material cur_material;
 
 			cur_material.title = sqlrow[0];
-			cur_material.quantity = atoi(sqlrow[1]);
+			cur_material.quantity = atof(sqlrow[1]);
 			cur_material.cost = atof(sqlrow[2]);
 
 			cur_materials_queue.push(cur_material);
