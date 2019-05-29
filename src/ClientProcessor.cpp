@@ -27,6 +27,7 @@
 #define BUF_SIZE 1024
 #define MATERIAL_SYM_LENGTH 256
 #define PURCHASE_SYM_LENGTH 256
+#define TIMEOUT 100
 
 void send_answer(int client_sockfd, rapidjson::Document &document);
 void send_error(int client_sockfd, std::string error);
@@ -470,14 +471,16 @@ void send_answer(int client_sockfd, rapidjson::Document &document)
 	/* Initialization */
 	static std::chrono::milliseconds last_time;
 	std::chrono::milliseconds now = std::chrono::duration_cast<std::chrono::milliseconds>(std::chrono::system_clock::now().time_since_epoch());
+	std::chrono::milliseconds diff;
 	rapidjson::StringBuffer string_buf;
 	rapidjson::PrettyWriter<rapidjson::StringBuffer> writer(string_buf);
 	char buffer[BUF_SIZE];
 	char log_buffer[BUF_SIZE];
 
-	if((now - last_time).count() < 100) {
-		LogPrinter::print("Timeout");
-		usleep(100000);
+	diff = now - last_time;
+	if(diff.count() < TIMEOUT) {
+		LogPrinter::print("Timeout for " + std::to_string(diff.count()) + " milliseconds");
+		usleep(diff.count() * 1000);
 	}
 
 	/* Conversion to the char* */
