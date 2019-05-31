@@ -97,7 +97,7 @@ int DbConnector::login(std::string number, std::string password, std::string &na
 
 	/* Setting query */
 	snprintf(query, QUERY_SIZE,
-		"SELECT Name, LastName, MiddleName, Type, ForemanNum FROM user WHERE PhoneNumber = \"%s\" AND Password = \"%s\";",
+		"SELECT Name, LastName, MiddleName, Type, ForemanPhoneNumber FROM user WHERE PhoneNumber = \"%s\" AND Password = \"%s\";",
 		number.c_str(), password.c_str());
 
 	/* Sending query */
