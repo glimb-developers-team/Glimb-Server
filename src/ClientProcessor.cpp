@@ -231,7 +231,7 @@ void ClientProcessor::_login(int client_sockfd, rapidjson::Value &info)
 			value.AddMember("clients_numbers", numbers_mas, alloc);
 		}
 		else if (user_type == "client") {
-			add_strfield(value, "foreman_num", foreman_number, alloc);
+			add_strfield(value, "foreman_number", foreman_number, alloc);
 		}
 
 		document.AddMember("info", value, alloc);
