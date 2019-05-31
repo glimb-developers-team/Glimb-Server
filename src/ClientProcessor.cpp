@@ -189,6 +189,7 @@ void ClientProcessor::_login(int client_sockfd, rapidjson::Value &info)
 	std::string middle_name;
 	std::string user_type;
 	std::queue<std::string> clients_numbers;
+	std::string foreman_number;
 	rapidjson::Document document;
 	rapidjson::Value value;
 	rapidjson::Value tmp;
@@ -200,7 +201,8 @@ void ClientProcessor::_login(int client_sockfd, rapidjson::Value &info)
 
 	db_answer = _db_connector.login(info["number"].GetString(),
 					info["password"].GetString(),
-					name, last_name, middle_name, user_type, clients_numbers);
+					name, last_name, middle_name, user_type,
+					clients_numbers, foreman_number);
 
 	if (db_answer != 0) {	// Error
 		throw std::runtime_error("Wrong number or password");
@@ -227,6 +229,9 @@ void ClientProcessor::_login(int client_sockfd, rapidjson::Value &info)
 				clients_numbers.pop();
 			}
 			value.AddMember("clients_numbers", numbers_mas, alloc);
+		}
+		else if (user_type == "client") {
+			add_strfield(value, "foreman_num", foreman_number, alloc);
 		}
 
 		document.AddMember("info", value, alloc);

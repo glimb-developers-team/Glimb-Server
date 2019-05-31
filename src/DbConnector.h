@@ -66,7 +66,8 @@ public:
 				std::string foreman_number);
 
 	int login(std::string number, std::string password, std::string &name,
-		std::string &last_name, std::string &middle_name, std::string &user_type, std::queue<std::string> &clients_queue);
+		std::string &last_name, std::string &middle_name, std::string &user_type,
+		std::queue<std::string> &clients_queue, std::string &foreman_number);
 
 	std::queue<material> get_materials();
 
