@@ -129,9 +129,9 @@ int DbConnector::login(std::string number, std::string password, std::string &na
 		while ((sqlrow = mysql_fetch_row(mysql_res)) != NULL) {
 			clients_queue.push(sqlrow[0]);
 		}
+		mysql_free_result(mysql_res);
 	}
 
-	mysql_free_result(mysql_res);
 	return 0;
 }
 
