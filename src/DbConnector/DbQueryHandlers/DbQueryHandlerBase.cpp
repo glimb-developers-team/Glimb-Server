@@ -7,6 +7,7 @@
 
 #include "DbQueryHandlerBase.h"
 #include "LogPrinter.h"
+#include <cstdio>
 
 #define HOST		"localhost"
 #define USER_NAME	"GlimbAdmin"
