@@ -6,7 +6,7 @@
 */
 
 #include "DbArg.h"
-#include "DbResult.h"
+#include "GetPurchasesDbResult.h"
 #include <string>
 #include <queue>
 
@@ -22,7 +22,7 @@ namespace DbConnector::DbArg {
 		std::string foreman_number;
 		std::queue<SelectedMaterial> materials;
 
-		StorePurchaseDbArg(std::strings client_number, std::string foreman_number,
+		StorePurchaseDbArg(std::string client_number, std::string foreman_number,
 				std::queue<SelectedMaterial> materials);
 	};
 }
