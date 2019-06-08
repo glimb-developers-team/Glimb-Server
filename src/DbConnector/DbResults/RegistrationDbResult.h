@@ -5,6 +5,9 @@
 * Date: 07.06.19
 */
 
+#ifndef REGISTRATION_DB_RESULT_H
+#define REGISTRATION_DB_RESULT_H
+
 #include "DbResult.h"
 #include <string>
 
@@ -19,3 +22,5 @@ namespace DbConnector::DbResult {
 		RegistrationDbResult(std::string result);
 	};
 }
+
+#endif // REGISTRATION_DB_RESULT_H

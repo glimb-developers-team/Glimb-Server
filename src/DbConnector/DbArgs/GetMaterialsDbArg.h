@@ -5,6 +5,9 @@
 * Date: 07.06.19
 */
 
+#ifndef GET_MATERIALS_DB_ARG_H
+#define GET_MATERIALS_DB_ARG_H
+
 #include "DbArg.h"
 
 namespace DbConnector::DbArg {
@@ -16,3 +19,5 @@ namespace DbConnector::DbArg {
 
 	}
 }
+
+#endif // GET_MATERIALS_DB_ARG_H

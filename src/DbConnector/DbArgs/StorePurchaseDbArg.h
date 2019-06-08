@@ -5,6 +5,9 @@
 * Date: 07.06.19
 */
 
+#ifndef STORE_PURCHASE_DB_ARG_H
+#define STORE_PURCHASE_DB_ARG_H
+
 #include "DbArg.h"
 #include "GetPurchasesDbResult.h"
 #include <string>
@@ -26,3 +29,5 @@ namespace DbConnector::DbArg {
 				std::queue<SelectedMaterial> materials);
 	};
 }
+
+#endif // STORE_PURCHASE_DB_ARG_H

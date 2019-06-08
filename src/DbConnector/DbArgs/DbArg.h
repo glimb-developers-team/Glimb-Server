@@ -5,6 +5,9 @@
 * Date: 07.06.19
 */
 
+#ifndef DB_ARG_H
+#define DB_ARG_H
+
 namespace DbConnector::DbArg {
 	/*
 	* DbArg - is the base struct for all arguments for db query
@@ -13,3 +16,5 @@ namespace DbConnector::DbArg {
 
 	};
 }
+
+#endif // DB_ARG_H

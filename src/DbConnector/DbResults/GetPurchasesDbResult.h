@@ -5,6 +5,9 @@
 * Date: 07.06.19
 */
 
+#ifndef GET_PURCHASES_DB_RESULT_H
+#define GET_PURCHASES_DB_RESULT_H
+
 #include "DbResult.h"
 #include <queue>
 #include <string>
@@ -44,3 +47,5 @@ namespace DbConnector::DbResult {
 		GetPurchasesDbResult(std::queue<PurchaseToSend> materials);
 	};
 }
+
+#endif // GET_PURCHASES_DB_RESULT_H

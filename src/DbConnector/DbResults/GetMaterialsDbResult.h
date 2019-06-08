@@ -5,6 +5,9 @@
 * Date: 07.06.19
 */
 
+#ifndef GET_MATERIALS_DB_RESULT_H
+#define GET_MATERIALS_DB_RESULT_H
+
 #include "DbResult.h"
 #include <queue>
 #include <string>
@@ -28,3 +31,5 @@ namespace DbConnector::DbResult {
 		GetMaterialsDbResult(std::queue<Material> materials);
 	};
 }
+
+#endif // GET_MATERIALS_DB_RESULT_H

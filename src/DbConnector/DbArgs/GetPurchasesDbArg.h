@@ -5,6 +5,9 @@
 * Date: 07.06.19
 */
 
+#ifndef GET_PURCHASES_DB_ARG_H
+#define GET_PURCHASES_DB_ARG_H
+
 #include "DbArg.h"
 #include <string>
 
@@ -20,3 +23,5 @@ namespace DbConnector::DbArg {
 		GetPurchasesDbArg(std::string client_number, std::string foreman_number);
 	};
 }
+
+#endif // GET_PURCHASES_DB_ARG_H

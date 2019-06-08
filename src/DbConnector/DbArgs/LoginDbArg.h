@@ -5,6 +5,9 @@
 * Date: 07.06.19
 */
 
+#ifndef LOGIN_DB_ARG_H
+#define LOGIN_DB_ARG_H
+
 #include "DbArg.h"
 #include <string>
 #include <queue>
@@ -29,3 +32,5 @@ namespace DbConnector::DbArg {
 			std::queue<std::string> &clients, std::string &foreman_number);
 	};
 }
+
+#endif // LOGIN_DB_ARG_H

@@ -5,6 +5,9 @@
 * Date: 07.06.19
 */
 
+#ifndef REGISTRATION_DB_ARG_H
+#define REGISTRATION_DB_ARG_H
+
 #include "DbArg.h"
 #include <string>
 
@@ -27,3 +30,5 @@ namespace DbConnector::DbArg {
 				std::string foreman_number);
 	};
 }
+
+#endif // REGISTRATION_DB_ARG_H

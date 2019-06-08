@@ -5,6 +5,9 @@
 * Date: 07.06.19
 */
 
+#ifndef LOGIN_DB_RESULT_H
+#define LOGIN_DB_RESULT_H
+
 #include "DbResult.h"
 
 namespace DbConnector::DbResult {
@@ -18,3 +21,5 @@ namespace DbConnector::DbResult {
 		LoginDbResult(int result);
 	};
 }
+
+#endif // LOGIN_DB_RESULT_H
