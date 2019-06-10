@@ -14,8 +14,6 @@
 #define PASSWORD	"secret"
 #define DB_NAME		"GlimbRu"
 
-#define QUERY_SIZE	1024
-
 using namespace DbConnector::DbQueryHandler;
 
 /* Initialization of static members */

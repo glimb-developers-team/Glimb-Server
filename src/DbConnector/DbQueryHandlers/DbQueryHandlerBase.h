@@ -12,6 +12,8 @@
 #include "DbResult.h"
 #include "mysql.h"
 
+#define QUERY_SIZE 1024
+
 namespace DbConnector::DbQueryHandler {
 	/*
 	* DbQueryHandlerBase - base abstract class for db query handlers.
@@ -35,7 +37,7 @@ namespace DbConnector::DbQueryHandler {
 		* All DbArg child classes should be places in DbArgs directory.
 		* All the above is similarly usable for method result.
 		*/
-		virtual DbResult::DbResult handle(DbArg::DbArg arg) = 0;
+		virtual DbResult::DbResult handle(DbArg::DbArg &arg) = 0;
 
 	protected:
 		/*
