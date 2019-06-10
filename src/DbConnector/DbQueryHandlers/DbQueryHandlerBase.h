@@ -18,6 +18,7 @@ namespace DbConnector::DbQueryHandler {
 	class DbQueryHandlerBase {
 	private:
 		static MYSQL *_conn_ptr;
+		static unsigned int _instance_counter;
 
 	public:
 		DbQueryHandlerBase();
