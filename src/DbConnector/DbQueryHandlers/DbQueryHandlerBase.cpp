@@ -20,7 +20,7 @@ using namespace DbConnector::DbQueryHandler;
 
 /* Initialization of static members */
 MYSQL *DbQueryHandlerBase::_conn_ptr = mysql_init(NULL);
-unsigned int DbQueryHandler::_instance_counter = 0;
+unsigned int DbQueryHandlerBase::_instance_counter = 0;
 
 /* Methods declaration */
 DbQueryHandlerBase::DbQueryHandlerBase()
