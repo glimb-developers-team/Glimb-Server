@@ -5,6 +5,9 @@
 * Date: 08.06.19
 */
 
+#ifndef DB_QUERY_HANDLER_BASE_H
+#define DB_QUERY_HANDLER_BASE_H
+
 #include "DbArg.h"
 #include "DbResult.h"
 #include "mysql.h"
@@ -53,3 +56,5 @@ namespace DbConnector::DbQueryHandler {
 		void _check_for_error(int res);
 	};
 }
+
+#endif // DB_QUERY_HANDLER_BASE_H
