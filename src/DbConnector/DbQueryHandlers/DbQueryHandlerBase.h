@@ -10,7 +10,7 @@
 
 #include "DbArg.h"
 #include "DbResult.h"
-#include "mysql.h"
+#include <mysql.h>
 
 #define QUERY_SIZE 1024
 
