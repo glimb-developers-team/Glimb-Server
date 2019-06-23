@@ -23,12 +23,14 @@ namespace DbConnector::DbResult {
 		std::string middle_name;
 		std::string type;
 		std::queue<std::string> clients;
-		std::string foreman_number
+		std::string foreman_number;
+
+		LoginDbResult();
 
 		LoginDbResult(std::string name, std::string last_name,
-			     std::string middle_name, std::string type,
-			     std::queue<std::string> clients,
-			     std::string foreman_number);
+			      std::string middle_name, std::string type,
+			      std::queue<std::string> clients,
+			      std::string foreman_number);
 	};
 }
 
