@@ -9,11 +9,8 @@
 
 using namespace DbConnector::DbArg;
 
-LoginDbArg::LoginDbArg(std::string number, std::string password, std::string &name,
-	std::string &last_name, std::string &middle_name, std::string &type,
-	std::queue<std::string> &clients, std::string &foreman_number) :
-	number(number), password(password), name(name), last_name(last_name),
-	middle_name(middle_name), type(type), clients(clients), foreman_number(foreman_number)
+LoginDbArg::LoginDbArg(std::string number, std::string password) :
+	number(number), password(password)
 {
 
 }

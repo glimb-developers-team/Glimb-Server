@@ -9,6 +9,8 @@
 #define LOGIN_DB_RESULT_H
 
 #include "DbResult.h"
+#include <string>
+#include <queue>
 
 namespace DbConnector::DbResult {
 	/*
@@ -16,9 +18,17 @@ namespace DbConnector::DbResult {
 	* as an output to the relevant handler.
 	*/
 	struct LoginDbResult : DbResult {
-		int result;
+		std::string name;
+		std::string last_name;
+		std::string middle_name;
+		std::string type;
+		std::queue<std::string> clients;
+		std::string foreman_number
 
-		LoginDbResult(int result);
+		LoginDbResult(std::string name, std::string last_name,
+			     std::string middle_name, std::string type,
+			     std::queue<std::string> clients,
+			     std::string foreman_number);
 	};
 }
 
