@@ -16,7 +16,6 @@ DbConnector::DbResult::DbResult LoginDbQueryHandler::handle(DbArg::DbArg &arg)
 	/* Initialization */
 	DbArg::LoginDbArg &log_arg = static_cast<DbArg::LoginDbArg&>(arg);
 	char query[QUERY_SIZE];
-	char error[QUERY_SIZE];
 	int res;
 	MYSQL_RES *mysql_res;
 	MYSQL_ROW sqlrow;

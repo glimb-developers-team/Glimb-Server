@@ -17,7 +17,6 @@ DbConnector::DbResult::DbResult RegistrationDbQueryHandler::handle(DbArg::DbArg 
 	/* Initialization */
 	DbArg::RegistrationDbArg &reg_arg = static_cast<DbArg::RegistrationDbArg&>(arg);
 	char query[QUERY_SIZE];
-	char error[QUERY_SIZE];
 	int res;
 
 	/* Setting query */
