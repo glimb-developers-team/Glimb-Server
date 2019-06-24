@@ -17,7 +17,7 @@ namespace DbConnector::DbArg {
 	*/
 	struct GetMaterialsDbArg : DbArg {
 
-	}
+	};
 }
 
 #endif // GET_MATERIALS_DB_ARG_H
